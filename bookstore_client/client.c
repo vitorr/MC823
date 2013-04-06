@@ -14,6 +14,8 @@
 
 #include <arpa/inet.h>
 
+#include "../definitions.h"  //Definitions of the bookstore application.
+
 #define PORT "8001" // the port client will be connecting to 
 
 #define MAXDATASIZE 100 // max number of bytes we can get at once 
@@ -35,6 +37,20 @@ int main(int argc, char *argv[])
 	struct addrinfo hints, *servinfo, *p;
 	int rv;
 	char s[INET6_ADDRSTRLEN];
+
+    if (argc > 2 
+	    || ( argc>1 && 0 == strcmp(argv[1], "-h") )
+	    || ( argc>1 && 0 == strcmp(argv[1], "--help") ) ) 
+	{
+        fprintf(stderr,"usage: client operation\n");
+		fprintf(stderr,"\t0: List all ISBN with titles\n");
+		fprintf(stderr,"\t1: Given an ISBN, show its description\n");
+		fprintf(stderr,"\t2: Given an ISBN, show every information available\n");
+		fprintf(stderr,"\t3: LIst everything from every book\n");
+		fprintf(stderr,"\t4: Change the stock count of a book (by ISBN)\n");
+		fprintf(stderr,"\t5: Given an ISBN, show the available stock\n");
+        exit(1);
+    }
 
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC;
@@ -76,22 +92,108 @@ int main(int argc, char *argv[])
 		return 2;
 	}
 
+	// connecting to the server
 	inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
 			s, sizeof s);
 	printf("client: connecting to %s\n", s);
 
 	freeaddrinfo(servinfo); // all done with this structure
+	
+	int quit=0;
+	while(!quit)
+	{
+		char op[3];
+		char ISBN[14];
+		
+		if(argc!=2)
+		{
+			// Menu
+			printf("Please choose the operation:\n");
+			printf("\t0: List all ISBN with titles\n");
+			printf("\t1: Given an ISBN, show its description\n");
+			printf("\t2: Given an ISBN, show every information available\n");
+			printf("\t3: LIst everything from every book\n");
+			printf("\t4: Change the stock count of a book (by ISBN)\n");
+			printf("\t5: Given an ISBN, show the available stock\n");
+			printf("\t6: Exit\n");
+			scanf("%s", op);
+		}
+		else
+			strcpy(op, argv[1]);
 
-	if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	    perror("recv");
-	    exit(1);
+		printf("op: \"%d\"\n", op[0]);
+		
+		int len;
+		// send the operation code
+		sendall(sockfd, op, &len);
+
+		// chooses the option and executes it
+		switch(op[0]-'0')
+		{
+			case 0:
+				// send the operation code
+				sendall(sockfd, op, &len);
+				break;
+			case 1:
+				// send the operation code
+				sendall(sockfd, op, &len);
+				
+				printf("\nPlease type in the ISBN:\n");
+				scanf("%s", ISBN);
+				sendall(sockfd, ISBN, &len);
+				
+				// gets the answer
+				if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
+					perror("recv");
+					exit(1);
+				}
+
+				buf[numbytes] = '\0';
+
+				printf("client: received '%s'\n",buf);
+				break;
+			case 2:
+				// send the operation code
+				sendall(sockfd, op, &len);
+				
+				printf("\nPlease type in the ISBN:\n");
+				scanf("%s", ISBN);
+				break;
+			case 3:
+				// send the operation code
+				sendall(sockfd, op, &len);
+				
+				break;
+			case 4:
+				// send the operation code
+				sendall(sockfd, op, &len);
+				
+				printf("\nPlease type in the ISBN:\n");
+				scanf("%s", ISBN);
+				printf("\nCurrent stock: %d\n", 6666);
+				printf("\nPlease type in the new value:\n");
+				scanf("%s", ISBN);
+				break;
+			case 5:
+				// send the operation code
+				sendall(sockfd, op, &len);
+				
+				printf("\nPlease type in the ISBN:\n");
+				scanf("%s", ISBN);
+				break;
+			case 6:
+				quit=1;
+				break;
+			default:
+				printf("\nInvalid option\n");
+				break;
+		}
+		
+		if(argc==2) quit=1;
 	}
 
-	buf[numbytes] = '\0';
-
-	printf("client: received '%s'\n",buf);
-
 	close(sockfd);
+
 
 	return 0;
 }
