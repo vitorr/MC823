@@ -14,8 +14,6 @@
 
 #include <arpa/inet.h>
 
-#include "../definitions.h"  //Definitions of the bookstore application.
-
 #define PORT "8001" // the port client will be connecting to 
 
 #define MAXDATASIZE 100 // max number of bytes we can get at once 
@@ -38,26 +36,20 @@ int main(int argc, char *argv[])
 	int rv;
 	char s[INET6_ADDRSTRLEN];
 
-	struct sockaddr_in server_sock_addr;  //Contains the address of the server (IPv4, the pointer 
-					      //must be cast to "struct sock_addr *" before call to "getaddrinfo()".	
-	char server_ip[INET6_ADDRSTRLEN] = "143.106.16.163";
-
-
-	/*if (argc != 2) {
-	    fprintf(stderr,"usage: client hostname\n");
-	    exit(1);
-	}*/
-
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
-	//Sets up struct with the IP of the server.
-	memset (&server_sock_addr, 0, sizeof server_sock_addr);
-	//strcpy (server_ip, "143.106.16.163");
-	inet_pton (AF_INET, server_ip, &(server_sock_addr.sin_addr));
-	hints.ai_addr = (struct sockaddr *) (&(server_sock_addr));
 
-	if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {
+	// gets the server ip from the web
+	char ip[100];
+    system("curl -s http://www.students.ic.unicamp.br/~ra091187/mc823/ip.txt > ip.txt");
+	// switches back the 1s and 2s (changed for security)
+    system("cat ip.txt | sed s/1/#/g | sed s/2/1/g | sed s/#/2/g > ip.txt");
+    FILE *f = fopen("ip.txt", "r");
+    fscanf(f, "%s", ip);
+    fclose(f);
+
+	if ((rv = getaddrinfo(ip, PORT, &hints, &servinfo)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
 		return 1;
 	}
@@ -73,7 +65,6 @@ int main(int argc, char *argv[])
 		if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
 			close(sockfd);
 			perror("client: connect");
-			printf ("%s\n", strerror (errno));
 			continue;
 		}
 
