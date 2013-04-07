@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 	while(!quit)
 	{
 		char op[3];
-		char ISBN[14];
+		char ISBN[ISBN_LENGTH];
 		
 		if(argc!=2)
 		{
@@ -121,11 +121,11 @@ int main(int argc, char *argv[])
 		else
 			strcpy(op, argv[1]);
 
-		printf("op: \"%d\"\n", op[0]);
+		printf("op: \"%s\"\n", op);
 		
 		int len;
 		// send the operation code
-		sendall(sockfd, op, &len);
+		//sendall(sockfd, op, &len);
 
 		// chooses the option and executes it
 		switch(op[0]-'0')
@@ -136,10 +136,15 @@ int main(int argc, char *argv[])
 				break;
 			case 1:
 				// send the operation code
-				sendall(sockfd, op, &len);
+				len = 3;
+				if (sendall(sockfd, op, &len) == -1) {
+					perror ("sendall");
+					printf ("Only %d bytes sent.\n", len);
+				}
 				
 				printf("\nPlease type in the ISBN:\n");
 				scanf("%s", ISBN);
+				len = strlen (ISBN);
 				sendall(sockfd, ISBN, &len);
 				
 				// gets the answer
@@ -148,6 +153,7 @@ int main(int argc, char *argv[])
 					exit(1);
 				}
 
+				printf ("numbytes:%d\n", numbytes);
 				buf[numbytes] = '\0';
 
 				printf("client: received '%s'\n",buf);
