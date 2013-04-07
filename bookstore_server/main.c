@@ -57,8 +57,10 @@ int main(void)
     int yes=1;
     char s[INET6_ADDRSTRLEN];
     int rv;
-
-    int recv_status, op; //Flags for communication with the client: return of the "recv()" function and operation.
+    
+    //Flags for communication with the client: return of the "recv()" function and operation.
+    char op[3];
+    int recv_status;
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -132,14 +134,17 @@ int main(void)
             close(sockfd); // child doesn't need the listener
 
             //Processing of the client request, specific to the database.
-	    recv_status = recv(new_fd, &op, sizeof (int), 0);
+	    recv_status = recv(new_fd, op, 3, 0);
+            op[recv_status] = '\0';
+            printf("op: \"%s\"\n", op);
+            printf("recv_status: \"%d\"\n", recv_status);
 	    //Stops when there is an error (-1) or when the client closes the connection (0).
             while (recv_status != 0) {
 		if (recv_status == -1) {
  	        	perror("receive");
 		}
 		//Defines the operation to be done and calls the corresponding function.
-		switch (op) {
+		switch (op[0] - '0') {
 			case ALL_ISBNS_AND_TITLES:
 				get_isbns_and_titles (new_fd);
 			break;
@@ -200,6 +205,8 @@ int get_desc_by_isbn (int socket) {
 	if (recv_status == 0) {
         	perror("receive: connection closed unexpectedly");
 	}
+        isbn[recv_status] = '\0';
+        printf("isbn: %s\n", isbn);
 
 	//Gets the structs from the file and checks for the one with the required ISBN.
 	db_file = fopen ("./bookstore_database.bin", "rb");
@@ -207,13 +214,15 @@ int get_desc_by_isbn (int socket) {
 		if (strcmp (isbn, b.isbn) == 0) {
 			strcpy (msg, b.description);
 			find = 1;
+                        printf("msg: \"%s\"\n", msg);
 			break;
 		}
 	}
 
 	//ISBN found: sends the description.
 	if (find ==1) {
-		len = ISBN_LENGTH;
+		//len = ISBN_LENGTH;
+		len = strlen (msg);
 		if (sendall (socket, msg, &len) == -1) {
 			perror ("sendall");
 			printf ("Only %d bytes sent.\n", len);
