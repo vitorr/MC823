@@ -6,6 +6,9 @@
 #define MAX_AUTHORS_PER_BOOK 3
 #define MAX_TEXT 500
 #define ISBN_LENGTH 14 //Standard is 13, but we must consider the '\0' character.
+#define OP_LENGTH 3
+#define MAX_MSG 1000
+#define INT_LENGTH 10
 
 //Database operations.
 #define ALL_ISBNS_AND_TITLES 0

@@ -15,6 +15,8 @@ int main () {
 	//Add a book.
 	strcpy (new_book.title, "HP and the Philosopher Stone");
 	strcpy (new_book.authors[0].name, "J.K. Rolling");
+	strcpy (new_book.authors[1].name, "");
+	strcpy (new_book.authors[2].name, "");
 	strcpy (new_book.description, "First HP");
 	strcpy (new_book.publisher, "Bloomsblurred");
 	new_book.publishing_year = 1990;
@@ -27,6 +29,8 @@ int main () {
 	//Add a book.
 	strcpy (new_book.title, "The Picasso Code");
 	strcpy (new_book.authors[0].name, "Dan Purple");
+	strcpy (new_book.authors[1].name, "");
+	strcpy (new_book.authors[2].name, "");
 	strcpy (new_book.description, "Conspiracies and action");
 	strcpy (new_book.publisher, "Doublefine");
 	new_book.publishing_year = 2000;
