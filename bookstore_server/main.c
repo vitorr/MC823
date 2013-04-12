@@ -188,10 +188,34 @@ int main(void)
     return 0;
 }
 
-
+//Obtains the ISBN and title of each book in the database.
 int get_isbns_and_titles(int socket) {
+	FILE * db_file;
+	char msg [MAX_MSG]; //Message to be sent to client: ISBN and title.
+	int len;
+	book b;
 
+	//Gets the structs from the file and sends the relevant information.
+	db_file = fopen ("./bookstore_database.bin", "rb");
+	while ((fread (&b, sizeof (book), 1, db_file)) == 1) {
+		//"|" character indicates that the information about the current book ended.
+		snprintf (msg, MAX_MSG, "ISBN: %s\nTitle: %s\n\n|", b.isbn, b.title); 
+		len = strlen (msg);
+		if (sendall (socket, msg, &len) == -1) {
+			perror ("sendall");
+			printf ("Only %d bytes sent.\n", len);
+		}	
+	}
 
+	//Sends last information ("|" string) to indicate the end of the database.
+	snprintf (msg, MAX_MSG, "|"); 
+	len = strlen (msg);
+	if (sendall (socket, msg, &len) == -1) {
+		perror ("sendall");
+		printf ("Only %d bytes sent.\n", len);
+	}	
+
+	fclose (db_file);
 
 	return 0;
 }
@@ -252,9 +276,35 @@ int get_info_by_isbn (int socket) {
 	return 0;
 }
 
+//Obtains all of the information of each book in the database. This information consists of
+//title, authors, description, publisher, publishing year, ISBN and stock.
 int get_all_infos (int socket) {
+	FILE * db_file;
+	char msg [MAX_MSG]; //Message to be sent to client: complete information.
+	int len;
+	book b;
 
+	//Gets the structs from the file and sends the information.
+	db_file = fopen ("./bookstore_database.bin", "rb");
+	while ((fread (&b, sizeof (book), 1, db_file)) == 1) {
+		//"|" character indicates that the information about the current book ended.
+		snprintf (msg, MAX_MSG, "Title: %s\nAuthors: %s\n%s\n%s\nDescription: %s\nPublisher: %s\nPublishing year: %d\nISBN: %s\nStock: %d\n\n", b.title, b.authors[0].name, b.authors[1].name, b.authors[2].name, b.description, b.publisher, b.publishing_year, b.isbn, b.stock);
+		len = strlen (msg);
+		if (sendall (socket, msg, &len) == -1) {
+			perror ("sendall");
+			printf ("Only %d bytes sent.\n", len);
+		}	
+	}
 
+	//Sends last information ("|" string) to indicate the end of the database.
+	snprintf (msg, MAX_MSG, "|"); 
+	len = strlen (msg);
+	if (sendall (socket, msg, &len) == -1) {
+		perror ("sendall");
+		printf ("Only %d bytes sent.\n", len);
+	}	
+
+	fclose (db_file);
 
 	return 0;
 }
@@ -399,6 +449,8 @@ int book_by_isbn (int socket, book * res) {
 			return 1;
 		}
 	}
+
+	fclose (db_file);
 
 	return 0;
 }
