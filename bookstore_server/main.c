@@ -370,12 +370,14 @@ int change_stock_by_isbn (int socket) {
 	}
 
 	//Informs current stock.
+	/*
 	snprintf (msg, MAX_MSG, "Current stock: %d\n", req_book->stock);
 	len = strlen (msg);
 	if (sendall (socket, msg, &len) == -1) {
 		perror ("sendall");
 		printf ("Only %d bytes sent.\n", len);
 	}
+	*/
 	
 	//Changes stock according to client.
 	recv_status = recv(socket, buff, INT_LENGTH, 0);
@@ -386,7 +388,9 @@ int change_stock_by_isbn (int socket) {
         	perror("receive - connection closed unexpectedly");
 	}
         buff[recv_status] = '\0';
-	new_stock = atoi (buff);
+	//new_stock = atoi (buff);
+	sscanf(buff, "%d", &new_stock);
+	printf("new stock: %s\n", buff);
 	req_book->stock = new_stock;
 
 	//Writes changes to database.
