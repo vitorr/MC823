@@ -2,6 +2,8 @@
 #ifndef defs
 #define defs
 
+#include <sys/time.h>
+
 #define MAX_NAME 100
 #define MAX_AUTHORS_PER_BOOK 3
 #define MAX_TEXT 500
@@ -46,6 +48,35 @@ int sendall(int s, char *buf, int *len) {
 	}
 	*len = total; // return number actually sent here
 	return n==-1?-1:0; // return -1 on failure, 0 on success
+}
+
+/*
+//Receives data from the network and prints it, until it finds the termination char.
+//Manages the case when the "recv()" function does not receive all of the data it was sent.
+int recvall(int s, char *buf, int *len, char end) {
+	int total = 0; // how many bytes we've received
+	//int bytesleft = *len; // how many we have left to send
+	int n;
+	while(total < *len) {
+		n = recv(s, buf+total, bytesleft, 0);
+		if (n == -1) { break; }
+		total += n;
+		bytesleft -= n;
+	}
+	*len = total; // return number actually sent here
+	return n==-1?-1:0; // return -1 on failure, 0 on success
+}
+*/
+
+long timelapse(struct timeval start, struct timeval end) {
+	//long mtime;
+	//long seconds;
+	long useconds;
+	//seconds  = end.tv_sec  - start.tv_sec;
+	useconds = end.tv_usec - start.tv_usec;
+	//mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
+	//return mtime;
+	return useconds;
 }
 
 #endif
