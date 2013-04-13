@@ -1,2 +1,5 @@
 all:
-	gcc -Wall client.c -o client.out -g
+	gcc -Wall -lrt client.c -o client.out -g
+
+run:
+	./client.out

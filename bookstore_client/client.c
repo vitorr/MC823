@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 
 #include <arpa/inet.h>
 
@@ -19,6 +20,8 @@
 #define PORT "8001" // the port client will be connecting to 
 
 #define MAXDATASIZE 100 // max number of bytes we can get at once 
+
+#define QUIT 6 // menu option to quit
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -65,6 +68,9 @@ int main(int argc, char *argv[])
     fscanf(f, "%s", ip);
     fclose(f);
 
+	int i;
+	for(i=0; i<5; i++)
+		if ((rv = getaddrinfo(ip, PORT, &hints, &servinfo)) == 0) break;
 	if ((rv = getaddrinfo(ip, PORT, &hints, &servinfo)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
 		return 1;
@@ -120,21 +126,25 @@ int main(int argc, char *argv[])
 		}
 		else
 			strcpy(op, argv[1]);
-
-		printf("op: \"%s\"\n", op);
 		
 		int len;
-		// send the operation code
-		//sendall(sockfd, op, &len);
-
+		
+		struct timeval start, end;
+		
 		// chooses the option and executes it
 		switch(op[0]-'0')
 		{
-			case 0:
+			case ALL_ISBNS_AND_TITLES:
 				// send the operation code
 				sendall(sockfd, op, &len);
 				break;
-			case 1:
+			case ISBN_TO_DESCRIPTION:
+				printf("\nPlease type in the ISBN:\n");
+				scanf("%s", ISBN);
+				
+				// marks the start of execution
+				gettimeofday(&start, NULL);
+				
 				// send the operation code
 				len = 3;
 				if (sendall(sockfd, op, &len) == -1) {
@@ -142,8 +152,7 @@ int main(int argc, char *argv[])
 					printf ("Only %d bytes sent.\n", len);
 				}
 				
-				printf("\nPlease type in the ISBN:\n");
-				scanf("%s", ISBN);
+				// sends the ISBN
 				len = strlen (ISBN);
 				sendall(sockfd, ISBN, &len);
 				
@@ -152,25 +161,31 @@ int main(int argc, char *argv[])
 					perror("recv");
 					exit(1);
 				}
+				
+				// marks the end of execution
+				gettimeofday(&end, NULL);
 
 				printf ("numbytes:%d\n", numbytes);
 				buf[numbytes] = '\0';
 
 				printf("client: received '%s'\n",buf);
 				break;
-			case 2:
-				// send the operation code
-				sendall(sockfd, op, &len);
-				
+			case ISBN_TO_INFO:
 				printf("\nPlease type in the ISBN:\n");
 				scanf("%s", ISBN);
+				
+				// send the operation code
+				sendall(sockfd, op, &len);
+				// sends the ISBN
+				sendall(sockfd, ISBN, &len);
+				
 				break;
-			case 3:
+			case ALL_BOOKS_INFO:
 				// send the operation code
 				sendall(sockfd, op, &len);
 				
 				break;
-			case 4:
+			case CHANGE_STOCK:
 				// send the operation code
 				sendall(sockfd, op, &len);
 				
@@ -180,19 +195,33 @@ int main(int argc, char *argv[])
 				printf("\nPlease type in the new value:\n");
 				scanf("%s", ISBN);
 				break;
-			case 5:
+			case ISBN_TO_STOCK:
 				// send the operation code
 				sendall(sockfd, op, &len);
 				
 				printf("\nPlease type in the ISBN:\n");
 				scanf("%s", ISBN);
 				break;
-			case 6:
+			case QUIT:
 				quit=1;
 				break;
 			default:
 				printf("\nInvalid option\n");
 				break;
+		}
+		
+		if( op[0]-'0'<6 )
+		{
+			long mtime, seconds, useconds;
+			seconds  = end.tv_sec  - start.tv_sec;
+			useconds = end.tv_usec - start.tv_usec;
+			mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
+			
+			char fname[20];
+			sprintf(fname, "file%c.log", op[1]);
+			FILE *f = fopen(fname, "a");
+			fprintf(f, "Elapsed time: %ld milliseconds\n", mtime);
+			fclose(f);
 		}
 		
 		if(argc==2) quit=1;
