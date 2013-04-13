@@ -50,10 +50,10 @@ void *get_in_addr(struct sockaddr *sa)
 
 int main(void)
 {
-    //Scans the output of ifconfig to get the IP address, and switches 1's for 2's (for security reasons).
+    /*//Scans the output of ifconfig to get the IP address, and switches 1's for 2's (for security reasons).
     system("sudo /sbin/ifconfig | awk -F':' '/inet addr/&&!/127.0.0.1/{split($2,_,\" \");print _[1]}' | sed s/1/#/g | sed s/2/1/g | sed s/#/2/g > ip.txt");
     //Copies the file to the public HTML location, in order for it to be available to all clients.
-    system("scp ip.txt ra091187@ssh.students.ic.unicamp.br:~/public_html/mc823/ip.txt");
+    system("scp ip.txt ra091187@ssh.students.ic.unicamp.br:~/public_html/mc823/ip.txt");*/
 
     
     int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
@@ -152,7 +152,7 @@ int main(void)
  	        	perror("receive");
 		}
 		//Defines the operation to be done and calls the corresponding function.
-		switch (op) {
+		switch (op[0] - '0') {
 			case ALL_ISBNS_AND_TITLES:
 				get_isbns_and_titles (new_fd);
 			break;
@@ -224,7 +224,10 @@ int get_isbns_and_titles(int socket) {
 int get_desc_by_isbn (int socket) {
 	char msg [MAX_MSG]; //Message to be sent to client: book's description.
 	int len;
-	book * req_book = NULL; //Book with the required ISBN.
+	book * req_book; //Book with the required ISBN.
+
+	//Initializes memory.
+	req_book = (book *) malloc (sizeof (book));
 
 	//ISBN found: sends the description.
 	if (book_by_isbn (socket, req_book) == 1) { //Gets the book with "isbn" in "*req_book".
@@ -244,6 +247,7 @@ int get_desc_by_isbn (int socket) {
 		}
 	}
 
+	free (req_book);
 
 	return 0;
 }
@@ -252,7 +256,10 @@ int get_desc_by_isbn (int socket) {
 int get_info_by_isbn (int socket) {
 	char msg [MAX_MSG]; //Message to be sent to client: full information.
 	int len;
-	book * req_book = NULL; //Book with the required ISBN.
+	book * req_book; //Book with the required ISBN.
+
+	//Initializes memory.
+	req_book = (book *) malloc (sizeof (book));
 
 	//ISBN found: sends the information.
 	if (book_by_isbn (socket, req_book) == 1) { //Gets the book with "isbn" in "*req_book".
@@ -272,6 +279,8 @@ int get_info_by_isbn (int socket) {
 			printf ("Only %d bytes sent.\n", len);
 		}
 	}
+
+	free (req_book);
 
 	return 0;
 }
@@ -316,7 +325,7 @@ int get_all_infos (int socket) {
 int change_stock_by_isbn (int socket) {
 	char msg [MAX_MSG]; //Message to be sent to client: Current stock and new stock.
 	int len;
-	book * req_book = NULL; //Book with the required ISBN.
+	book * req_book; //Book with the required ISBN.
 	char isbn [ISBN_LENGTH];
 	int recv_status;
 	book b; //Auxiliary.
@@ -324,6 +333,9 @@ int change_stock_by_isbn (int socket) {
 	int find = 0; //Flag which indicates if the required ISBN was found (1) or not (0).
 	int new_stock;
 	char buff [INT_LENGTH]; //Buffer for receiving new stock (as a string).
+
+	//Initializes memory.
+	req_book = (book *) malloc (sizeof (book));
 
 	//Receives ISBN number from client.
 	recv_status = recv(socket, isbn, ISBN_LENGTH, 0);
@@ -392,6 +404,8 @@ int change_stock_by_isbn (int socket) {
 		printf ("Only %d bytes sent.\n", len);
 	}
 
+	free (req_book);
+
 	return 0;
 }
 
@@ -399,7 +413,10 @@ int change_stock_by_isbn (int socket) {
 int get_stock_by_isbn (int socket) {
 	char msg [MAX_MSG]; //Message to be sent to client: stock.
 	int len;
-	book * req_book = NULL; //Book with the required ISBN.
+	book * req_book; //Book with the required ISBN.
+
+	//Initializes memory.
+	req_book = (book *) malloc (sizeof (book));
 
 	//ISBN found: sends the stock.
 	if (book_by_isbn (socket, req_book) == 1) { //Gets the book with "isbn" in "*req_book".
@@ -419,10 +436,13 @@ int get_stock_by_isbn (int socket) {
 		}
 	}
 
+	free (req_book);
+
 	return 0;
 }
 
 //Gets "res" to point to a book struct with "isbn" (obtained from a client's request) as its ISBN.
+//Assumes that "res" is pointing to a book struct beforehand.
 //Returns 1 if the book was found, 0 if it was not.
 int book_by_isbn (int socket, book * res) {
 	char isbn [ISBN_LENGTH];

@@ -36,7 +36,7 @@ void *get_in_addr(struct sockaddr *sa)
 int main(int argc, char *argv[])
 {
 	int sockfd, numbytes;  
-	char buf[MAXDATASIZE];
+	char buf[MAX_MSG];
 	struct addrinfo hints, *servinfo, *p;
 	int rv;
 	char s[INET6_ADDRSTRLEN];
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
 				sendall(sockfd, ISBN, &len);
 				
 				// gets the answer
-				if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
+				if ((numbytes = recv(sockfd, buf, MAX_MSG-1, 0)) == -1) {
 					perror("recv");
 					exit(1);
 				}
@@ -183,10 +183,33 @@ int main(int argc, char *argv[])
 				printf("\nPlease type in the ISBN:\n");
 				scanf("%s", ISBN);
 				
+				// marks the start of execution
+				gettimeofday(&start, NULL);
+				
 				// send the operation code
-				sendall(sockfd, op, &len);
+				len = 3;
+				if (sendall(sockfd, op, &len) == -1) {
+					perror ("sendall");
+					printf ("Only %d bytes sent.\n", len);
+				}
+				
 				// sends the ISBN
+				len = strlen (ISBN);
 				sendall(sockfd, ISBN, &len);
+				
+				// gets the answer
+				if ((numbytes = recv(sockfd, buf, MAX_MSG-1, 0)) == -1) {
+					perror("recv");
+					exit(1);
+				}
+				
+				// marks the end of execution
+				gettimeofday(&end, NULL);
+
+				printf ("numbytes:%d\n", numbytes);
+				buf[numbytes] = '\0';
+
+				printf("client: received '%s'\n",buf);
 				
 				break;
 			case ALL_BOOKS_INFO:
@@ -205,11 +228,36 @@ int main(int argc, char *argv[])
 				scanf("%s", ISBN);
 				break;
 			case ISBN_TO_STOCK:
-				// send the operation code
-				sendall(sockfd, op, &len);
-				
 				printf("\nPlease type in the ISBN:\n");
 				scanf("%s", ISBN);
+				
+				// marks the start of execution
+				gettimeofday(&start, NULL);
+				
+				// send the operation code
+				len = 3;
+				if (sendall(sockfd, op, &len) == -1) {
+					perror ("sendall");
+					printf ("Only %d bytes sent.\n", len);
+				}
+				
+				// sends the ISBN
+				len = strlen (ISBN);
+				sendall(sockfd, ISBN, &len);
+				
+				// gets the answer
+				if ((numbytes = recv(sockfd, buf, MAX_MSG-1, 0)) == -1) {
+					perror("recv");
+					exit(1);
+				}
+				
+				// marks the end of execution
+				gettimeofday(&end, NULL);
+
+				printf ("numbytes:%d\n", numbytes);
+				buf[numbytes] = '\0';
+
+				printf("client: received '%s'\n",buf);
 				break;
 			case QUIT:
 				quit=1;
