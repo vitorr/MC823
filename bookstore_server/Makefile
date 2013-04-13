@@ -1,2 +1,2 @@
 all:
-	gcc -pedantic -Wall main.c -o server.out -g
+	gcc -Wall main.c -o server.out -g

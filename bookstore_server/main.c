@@ -198,8 +198,8 @@ int get_isbns_and_titles(int socket) {
 	//Gets the structs from the file and sends the relevant information.
 	db_file = fopen ("./bookstore_database.bin", "rb");
 	while ((fread (&b, sizeof (book), 1, db_file)) == 1) {
-		//"|" character indicates that the information about the current book ended.
-		snprintf (msg, MAX_MSG, "ISBN: %s\nTitle: %s\n\n|", b.isbn, b.title); 
+		//Sends reply to be printed on the client.
+		snprintf (msg, MAX_MSG, "ISBN: %s\nTitle: %s\n\n", b.isbn, b.title); 
 		len = strlen (msg);
 		if (sendall (socket, msg, &len) == -1) {
 			perror ("sendall");
@@ -296,7 +296,7 @@ int get_all_infos (int socket) {
 	//Gets the structs from the file and sends the information.
 	db_file = fopen ("./bookstore_database.bin", "rb");
 	while ((fread (&b, sizeof (book), 1, db_file)) == 1) {
-		//"|" character indicates that the information about the current book ended.
+		//Sends reply to be printed on the client.
 		snprintf (msg, MAX_MSG, "Title: %s\nAuthors: %s\n%s\n%s\nDescription: %s\nPublisher: %s\nPublishing year: %d\nISBN: %s\nStock: %d\n\n", b.title, b.authors[0].name, b.authors[1].name, b.authors[2].name, b.description, b.publisher, b.publishing_year, b.isbn, b.stock);
 		len = strlen (msg);
 		if (sendall (socket, msg, &len) == -1) {
