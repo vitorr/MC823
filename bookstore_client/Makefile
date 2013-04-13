@@ -2,4 +2,8 @@ all:
 	gcc -Wall -lrt client.c -o client.out -g
 
 run:
-	./client.out
+	./run.sh
+
+clean:
+	-rm file*.log
+	-rm *.out
