@@ -42,6 +42,36 @@ void *get_in_addr(struct sockaddr *sa)
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
+// recvs and prints everything while there is no '|'
+void recv_print_all(int sockfd)
+{
+	char buf[MAX_MSG];
+	int numbytes;
+	
+	while(1)
+	{
+		int end=0, i;
+		numbytes = recv(sockfd, buf, MAX_MSG-1, 0);
+		if(numbytes!=-1){
+			buf[numbytes] = '\0';
+			for(i=0; i<numbytes; i++)
+				if(buf[i]=='|') {
+					buf[i]='\0';
+					end = 1;
+				}
+			printf("%s", buf);
+			if(end) break;
+		}
+		else {
+			perror("recv");
+			exit(1);
+		}
+	}
+	printf ("numbytes:%d\n", numbytes);
+	printf("client: received '%s'\n",buf);
+	return;
+}
+
 int main(int argc, char *argv[])
 {
 	int sockfd;  
@@ -204,10 +234,8 @@ int main(int argc, char *argv[])
 
 long long get_isbns_and_titles(int sockfd, char *op)
 {
-	int len;
 	struct timeval start, end;
-	char buf[MAX_MSG];
-	int numbytes;
+	int len;
 
 	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
@@ -220,25 +248,7 @@ long long get_isbns_and_titles(int sockfd, char *op)
 	}
 
 	// recvs and prints everything while there is no '|'
-	while(1)
-	{
-		int end=0, i;
-		numbytes = recv(sockfd, buf, MAX_MSG-1, 0);
-		if(numbytes!=-1){
-			buf[numbytes] = '\0';
-			for(i=0; i<numbytes; i++)
-				if(buf[i]=='|') {
-					buf[i]='\0';
-					end = 1;
-				}
-			printf("%s", buf);
-			if(end) break;
-		}
-		else {
-			perror("recv");
-			exit(1);
-		}
-	}
+	recv_print_all(sockfd);
 	
 	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
@@ -248,10 +258,8 @@ long long get_isbns_and_titles(int sockfd, char *op)
 
 long long get_desc_by_isbn (int sockfd, char *op)
 {
-	int len;
 	struct timeval start, end;
-	char buf[MAX_MSG];
-	int numbytes;
+	int len;
 	char ISBN[ISBN_LENGTH];
 
 	printf("\nPlease type in the ISBN:\n");
@@ -271,29 +279,19 @@ long long get_desc_by_isbn (int sockfd, char *op)
 	len = strlen (ISBN);
 	sendall(sockfd, ISBN, &len);
 
-	// gets the answer
-	if ((numbytes = recv(sockfd, buf, MAX_MSG-1, 0)) == -1) {
-		perror("recv");
-		exit(1);
-	}
+	// recvs and prints everything while there is no '|'
+	recv_print_all(sockfd);
 
 	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
-
-	printf ("numbytes:%d\n", numbytes);
-	buf[numbytes] = '\0';
-
-	printf("client: received '%s'\n",buf);
 
 	return timelapse(start, end);
 }
 
 long long get_info_by_isbn (int sockfd, char *op)
 {
-	int len;
 	struct timeval start, end;
-	char buf[MAX_MSG];
-	int numbytes;
+	int len;
 	char ISBN[ISBN_LENGTH];
 
 	printf("\nPlease type in the ISBN:\n");
@@ -313,29 +311,19 @@ long long get_info_by_isbn (int sockfd, char *op)
 	len = strlen (ISBN);
 	sendall(sockfd, ISBN, &len);
 
-	// gets the answer
-	if ((numbytes = recv(sockfd, buf, MAX_MSG-1, 0)) == -1) {
-		perror("recv");
-		exit(1);
-	}
+	// recvs and prints everything while there is no '|'
+	recv_print_all(sockfd);
 
 	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
-
-	printf ("numbytes:%d\n", numbytes);
-	buf[numbytes] = '\0';
-
-	printf("client: received '%s'\n",buf);
 
 	return timelapse(start, end);
 }
 
 long long get_all_infos (int sockfd, char *op)
 {
-	int len;
 	struct timeval start, end;
-	char buf[MAX_MSG];
-	int numbytes;
+	int len;
 
 	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
@@ -348,26 +336,7 @@ long long get_all_infos (int sockfd, char *op)
 	}
 
 	// recvs and prints everything while there is no '|'
-	while(1)
-	{
-		int end=0, i;
-		numbytes = recv(sockfd, buf, MAX_MSG-1, 0);
-		if(numbytes!=-1){
-			buf[numbytes] = '\0';
-			for(i=0; i<numbytes; i++)
-				if(buf[i]=='|') {
-					buf[i]='\0';
-					end = 1;
-				}
-			printf("%s", buf);
-			if(end) break;
-		}
-		else {
-			perror("recv");
-			exit(1);
-		}
-	}
-
+	recv_print_all(sockfd);
 
 	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
@@ -377,10 +346,8 @@ long long get_all_infos (int sockfd, char *op)
 
 long long change_stock_by_isbn (int sockfd, char *op)
 {
-	int len;
 	struct timeval start, end;
-	char buf[MAX_MSG];
-	int numbytes;
+	int len;
 	char ISBN[ISBN_LENGTH];
 	char stock[20];
 
@@ -413,29 +380,19 @@ long long change_stock_by_isbn (int sockfd, char *op)
 		printf ("Only %d bytes sent.\n", len);
 	}
 
-	// gets the answer
-	if ((numbytes = recv(sockfd, buf, MAX_MSG-1, 0)) == -1) {
-		perror("recv");
-		exit(1);
-	}
+	// recvs and prints everything while there is no '|'
+	recv_print_all(sockfd);
 
 	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
-
-	printf ("numbytes:%d\n", numbytes);
-	buf[numbytes] = '\0';
-
-	printf("client: received '%s'\n",buf);
 	
 	return timelapse(start, end);
 }
 
 long long get_stock_by_isbn (int sockfd, char *op)
 {
-	int len;
 	struct timeval start, end;
-	char buf[MAX_MSG];
-	int numbytes;
+	int len;
 	char ISBN[ISBN_LENGTH];
 
 	printf("\nPlease type in the ISBN:\n");
@@ -455,19 +412,11 @@ long long get_stock_by_isbn (int sockfd, char *op)
 	len = strlen (ISBN);
 	sendall(sockfd, ISBN, &len);
 
-	// gets the answer
-	if ((numbytes = recv(sockfd, buf, MAX_MSG-1, 0)) == -1) {
-		perror("recv");
-		exit(1);
-	}
+	// recvs and prints everything while there is no '|'
+	recv_print_all(sockfd);
 
 	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
-
-	printf ("numbytes:%d\n", numbytes);
-	buf[numbytes] = '\0';
-
-	printf("client: received '%s'\n",buf);
 	
 	return timelapse(start, end);
 }
