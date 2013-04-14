@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	/*VERSION THAT GETS IP FROM THE WEB
+	//VERSION THAT GETS IP FROM THE WEB
 	// gets the server ip from the web
 	char ip[100];
     system("curl -s http://www.students.ic.unicamp.br/~ra091187/mc823/ip.txt > ip.txt");
@@ -113,21 +113,21 @@ int main(int argc, char *argv[])
     fscanf(f, "%s", ip);
     fclose(f);
 
-	int i;
-	for(i=0; i<5; i++)
-		if ((rv = getaddrinfo(ip, PORT, &hints, &servinfo)) == 0) break;
+//	int i;
+	//for(i=0; i<5; i++) {
+//		if ((rv = getaddrinfo(ip, PORT, &hints, &servinfo)) == 0) break;
 	if ((rv = getaddrinfo(ip, PORT, &hints, &servinfo)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
 		return 1;
 	}
-	*/
-	//Debug version: server and client in the same machine.
+	
+	/*//Debug version: server and client in the same machine.
 	hints.ai_flags = AI_PASSIVE;
 	if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {	
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
 		return 1;
 	}
-	//End of changes in debug version.
+	//End of changes in debug version.*/
 
 	// loop through all the results and connect to the first we can
 	for(p = servinfo; p != NULL; p = p->ai_next) {
