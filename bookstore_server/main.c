@@ -273,6 +273,7 @@ long get_desc_by_isbn (int socket) {
 	//ISBN found: sends the description.
 	if (book_by_isbn (socket, isbn, req_book) == 1) { //Gets the book with "isbn" in "*req_book".
 		strcpy (msg, req_book->description);
+		strcat (msg, "|");
 		len = strlen (msg);
 		free (req_book);
 		
@@ -327,7 +328,7 @@ long get_info_by_isbn (int socket) {
 	//ISBN found: sends the information.
 	if (book_by_isbn (socket, isbn, req_book) == 1) { //Gets the book with "isbn" in "*req_book".
 		//Builds the message string.
-		snprintf (msg, MAX_MSG, "Title: %s\nAuthors: %s\n%s\n%s\nDescription: %s\nPublisher: %s\nPublishing year: %d\nISBN: %s\nStock: %d\n\n", req_book->title, req_book->authors[0].name, req_book->authors[1].name, req_book->authors[2].name, req_book->description, req_book->publisher, req_book->publishing_year, req_book->isbn, req_book->stock);
+		snprintf (msg, MAX_MSG, "Title: %s\nAuthors: %s\n%s\n%s\nDescription: %s\nPublisher: %s\nPublishing year: %d\nISBN: %s\nStock: %d\n\n|", req_book->title, req_book->authors[0].name, req_book->authors[1].name, req_book->authors[2].name, req_book->description, req_book->publisher, req_book->publishing_year, req_book->isbn, req_book->stock);
 		len = strlen (msg);
 		
 		free (req_book);
@@ -484,7 +485,7 @@ long change_stock_by_isbn (int socket) {
 	fclose (db_file);
 
 	//Informs new stock.
-	snprintf (msg, MAX_MSG, "Operation complete!\nNew stock: %d\n", new_stock);
+	snprintf (msg, MAX_MSG, "Operation complete!\nNew stock: %d\n|", new_stock);
 	len = strlen (msg);
 	if (sendall (socket, msg, &len) == -1) {
 		perror ("sendall");
@@ -528,7 +529,7 @@ long get_stock_by_isbn (int socket) {
 
 	//ISBN found: sends the stock.
 	if (book_by_isbn (socket, isbn, req_book) == 1) { //Gets the book with "isbn" in "*req_book".
-		snprintf (msg, MAX_MSG, "%d\n", req_book->stock);
+		snprintf (msg, MAX_MSG, "%d\n|", req_book->stock);
 		len = strlen (msg);
 		free (req_book);
 		
