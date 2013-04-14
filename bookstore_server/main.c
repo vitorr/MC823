@@ -33,7 +33,7 @@ long change_stock_by_isbn (int socket);
 long get_stock_by_isbn (int socket);
 
 //Auxiliary to the above functions.
-int book_by_isbn (int socket, book * res);
+int book_by_isbn (int socket, char isbn [ISBN_LENGTH], book * res);
 
 void sigchld_handler(int s)
 {
@@ -249,6 +249,8 @@ long get_desc_by_isbn (int socket) {
 	char msg [MAX_MSG]; //Message to be sent to client: book's description.
 	int len;
 	book * req_book; //Book with the required ISBN.
+	char isbn [ISBN_LENGTH];
+	int recv_status;	
 	struct timeval start, end;
 	
 	// marks the start of execution
@@ -257,8 +259,19 @@ long get_desc_by_isbn (int socket) {
 	//Initializes memory.
 	req_book = (book *) malloc (sizeof (book));
 
+	//Receives ISBN number from client.
+	recv_status = recv(socket, isbn, ISBN_LENGTH, 0);
+	if (recv_status == -1) {
+        	perror("receive");
+	}
+	if (recv_status == 0) {
+        	perror("receive - connection closed unexpectedly");
+	}
+        isbn[recv_status] = '\0';
+        printf("isbn: %s\n", isbn);
+
 	//ISBN found: sends the description.
-	if (book_by_isbn (socket, req_book) == 1) { //Gets the book with "isbn" in "*req_book".
+	if (book_by_isbn (socket, isbn, req_book) == 1) { //Gets the book with "isbn" in "*req_book".
 		strcpy (msg, req_book->description);
 		len = strlen (msg);
 		free (req_book);
@@ -293,6 +306,8 @@ long get_info_by_isbn (int socket) {
 	char msg [MAX_MSG]; //Message to be sent to client: full information.
 	int len;
 	book * req_book; //Book with the required ISBN.
+	char isbn [ISBN_LENGTH];
+	int recv_status;	
 	struct timeval start, end;
 	
 	// marks the start of execution
@@ -301,8 +316,19 @@ long get_info_by_isbn (int socket) {
 	//Initializes memory.
 	req_book = (book *) malloc (sizeof (book));
 
+	//Receives ISBN number from client.
+	recv_status = recv(socket, isbn, ISBN_LENGTH, 0);
+	if (recv_status == -1) {
+        	perror("receive");
+	}
+	if (recv_status == 0) {
+        	perror("receive - connection closed unexpectedly");
+	}
+        isbn[recv_status] = '\0';
+        printf("isbn: %s\n", isbn);
+
 	//ISBN found: sends the information.
-	if (book_by_isbn (socket, req_book) == 1) { //Gets the book with "isbn" in "*req_book".
+	if (book_by_isbn (socket, isbn, req_book) == 1) { //Gets the book with "isbn" in "*req_book".
 		//Builds the message string.
 		snprintf (msg, MAX_MSG, "Title: %s\nAuthors: %s\n%s\n%s\nDescription: %s\nPublisher: %s\nPublishing year: %d\nISBN: %s\nStock: %d\n\n", req_book->title, req_book->authors[0].name, req_book->authors[1].name, req_book->authors[2].name, req_book->description, req_book->publisher, req_book->publishing_year, req_book->isbn, req_book->stock);
 		len = strlen (msg);
@@ -485,17 +511,29 @@ long get_stock_by_isbn (int socket) {
 	char msg [MAX_MSG]; //Message to be sent to client: stock.
 	int len;
 	book * req_book; //Book with the required ISBN.
+	char isbn [ISBN_LENGTH];
+	int recv_status;	
 	struct timeval start, end;
 	
 	// marks the start of execution
 	gettimeofday(&start, NULL);
 
-
 	//Initializes memory.
 	req_book = (book *) malloc (sizeof (book));
 
+	//Receives ISBN number from client.
+	recv_status = recv(socket, isbn, ISBN_LENGTH, 0);
+	if (recv_status == -1) {
+        	perror("receive");
+	}
+	if (recv_status == 0) {
+        	perror("receive - connection closed unexpectedly");
+	}
+        isbn[recv_status] = '\0';
+        printf("isbn: %s\n", isbn);
+
 	//ISBN found: sends the stock.
-	if (book_by_isbn (socket, req_book) == 1) { //Gets the book with "isbn" in "*req_book".
+	if (book_by_isbn (socket, isbn, req_book) == 1) { //Gets the book with "isbn" in "*req_book".
 		snprintf (msg, MAX_MSG, "%d\n", req_book->stock);
 		len = strlen (msg);
 		free (req_book);
@@ -528,22 +566,9 @@ long get_stock_by_isbn (int socket) {
 //Gets "res" to point to a book struct with "isbn" (obtained from a client's request) as its ISBN.
 //Assumes that "res" is pointing to a book struct beforehand.
 //Returns 1 if the book was found, 0 if it was not.
-int book_by_isbn (int socket, book * res) {
-	char isbn [ISBN_LENGTH];
-	int recv_status;
+int book_by_isbn (int socket, char isbn [ISBN_LENGTH], book * res) {
 	book b;
 	FILE * db_file;
-
-	//Receives ISBN number from client.
-	recv_status = recv(socket, isbn, ISBN_LENGTH, 0);
-	if (recv_status == -1) {
-        	perror("receive");
-	}
-	if (recv_status == 0) {
-        	perror("receive - connection closed unexpectedly");
-	}
-        isbn[recv_status] = '\0';
-        printf("isbn: %s\n", isbn);
 
 	//Gets the structs from the file and checks for the one with the required ISBN.
 	db_file = fopen ("./bookstore_database.bin", "rb");
