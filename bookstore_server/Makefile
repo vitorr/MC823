@@ -11,5 +11,4 @@ data:
 
 clean:
 	-rm bookstore_database.bin
-	-rm file*.log
 	-rm *.out

@@ -68,15 +68,21 @@ int recvall(int s, char *buf, int *len, char end) {
 }
 */
 
-long timelapse(struct timeval start, struct timeval end) {
-	//long mtime;
-	//long seconds;
-	long useconds;
-	//seconds  = end.tv_sec  - start.tv_sec;
-	useconds = end.tv_usec - start.tv_usec;
-	//mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
-	//return mtime;
-	return useconds;
+long long timelapse(struct timeval start, struct timeval end) {
+	if (1)
+	{
+		long long useconds;
+		useconds = end.tv_usec - start.tv_usec;
+		return useconds;
+	}
+	else
+	{
+		long long useconds, mtime, seconds;
+		seconds  = end.tv_sec  - start.tv_sec;
+		useconds = end.tv_usec - start.tv_usec;
+		mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
+		return mtime;
+	}
 }
 
 #endif

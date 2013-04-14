@@ -214,7 +214,7 @@ long get_isbns_and_titles(int socket) {
 	book b;
 	struct timeval start, end;
 	
-	// marks the start of execution
+	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
 
 	//Gets the structs from the file and sends the relevant information.
@@ -230,9 +230,6 @@ long get_isbns_and_titles(int socket) {
 	}
 	fclose (db_file);
 
-	// marks the end of execution
-	gettimeofday(&end, NULL);
-	
 	//Sends last information ("|" string) to indicate the end of the database.
 	snprintf (msg, MAX_MSG, "|"); 
 	len = strlen (msg);
@@ -241,6 +238,9 @@ long get_isbns_and_titles(int socket) {
 		printf ("Only %d bytes sent.\n", len);
 	}	
 
+	//### Marks the end of execution ###//
+	gettimeofday(&end, NULL);
+	
 	return timelapse(start, end);
 }
 
@@ -252,12 +252,6 @@ long get_desc_by_isbn (int socket) {
 	char isbn [ISBN_LENGTH];
 	int recv_status;	
 	struct timeval start, end;
-	
-	// marks the start of execution
-	gettimeofday(&start, NULL);
-
-	//Initializes memory.
-	req_book = (book *) malloc (sizeof (book));
 
 	//Receives ISBN number from client.
 	recv_status = recv(socket, isbn, ISBN_LENGTH, 0);
@@ -270,14 +264,17 @@ long get_desc_by_isbn (int socket) {
         isbn[recv_status] = '\0';
         printf("isbn: %s\n", isbn);
 
+	//### Marks the start of execution ###//
+	gettimeofday(&start, NULL);
+	
+	//Initializes memory.
+	req_book = (book *) malloc (sizeof (book));
+
 	//ISBN found: sends the description.
 	if (book_by_isbn (socket, isbn, req_book) == 1) { //Gets the book with "isbn" in "*req_book".
 		strcpy (msg, req_book->description);
 		len = strlen (msg);
 		free (req_book);
-		
-		// marks the end of execution
-		gettimeofday(&end, NULL);
 		
 		if (sendall (socket, msg, &len) == -1) {
 			perror ("sendall");
@@ -289,14 +286,14 @@ long get_desc_by_isbn (int socket) {
 		len = strlen (msg);
 		free (req_book);
 		
-		// marks the end of execution
-		gettimeofday(&end, NULL);
-		
 		if (sendall (socket, msg, &len) == -1) {
 			perror ("sendall");
 			printf ("Only %d bytes sent.\n", len);
 		}
 	}
+	
+	//### Marks the end of execution ###//
+	gettimeofday(&end, NULL);
 
 	return timelapse(start, end);
 }
@@ -310,12 +307,6 @@ long get_info_by_isbn (int socket) {
 	int recv_status;	
 	struct timeval start, end;
 	
-	// marks the start of execution
-	gettimeofday(&start, NULL);
-
-	//Initializes memory.
-	req_book = (book *) malloc (sizeof (book));
-
 	//Receives ISBN number from client.
 	recv_status = recv(socket, isbn, ISBN_LENGTH, 0);
 	if (recv_status == -1) {
@@ -324,8 +315,14 @@ long get_info_by_isbn (int socket) {
 	if (recv_status == 0) {
         	perror("receive - connection closed unexpectedly");
 	}
-        isbn[recv_status] = '\0';
-        printf("isbn: %s\n", isbn);
+	isbn[recv_status] = '\0';
+	printf("isbn: %s\n", isbn);
+	
+	//### Marks the start of execution ###//
+	gettimeofday(&start, NULL);
+	
+	//Initializes memory.
+	req_book = (book *) malloc (sizeof (book));
 
 	//ISBN found: sends the information.
 	if (book_by_isbn (socket, isbn, req_book) == 1) { //Gets the book with "isbn" in "*req_book".
@@ -335,8 +332,6 @@ long get_info_by_isbn (int socket) {
 		
 		free (req_book);
 
-		// marks the end of execution
-		gettimeofday(&end, NULL);
 
 		if (sendall (socket, msg, &len) == -1) {
 			perror ("sendall");
@@ -347,15 +342,15 @@ long get_info_by_isbn (int socket) {
 		strcpy (msg, "ISBN not in database");
 		len = strlen (msg);
 		
-		// marks the end of execution
-		gettimeofday(&end, NULL);
-		
 		if (sendall (socket, msg, &len) == -1) {
 			perror ("sendall");
 			printf ("Only %d bytes sent.\n", len);
 		}
 	}
 
+	//### Marks the end of execution ###//
+	gettimeofday(&end, NULL);
+	
 	return timelapse(start, end);
 }
 
@@ -368,9 +363,8 @@ long get_all_infos (int socket) {
 	book b;
 	struct timeval start, end;
 	
-	// marks the start of execution
+	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
-
 
 	//Gets the structs from the file and sends the information.
 	db_file = fopen ("./bookstore_database.bin", "rb");
@@ -378,9 +372,6 @@ long get_all_infos (int socket) {
 		//Sends reply to be printed on the client.
 		snprintf (msg, MAX_MSG, "Title: %s\nAuthors: %s\n%s\n%s\nDescription: %s\nPublisher: %s\nPublishing year: %d\nISBN: %s\nStock: %d\n\n", b.title, b.authors[0].name, b.authors[1].name, b.authors[2].name, b.description, b.publisher, b.publishing_year, b.isbn, b.stock);
 		len = strlen (msg);
-		
-		// marks the end of execution
-		gettimeofday(&end, NULL);
 		
 		if (sendall (socket, msg, &len) == -1) {
 			perror ("sendall");
@@ -392,15 +383,15 @@ long get_all_infos (int socket) {
 	snprintf (msg, MAX_MSG, "|"); 
 	len = strlen (msg);
 
-	// marks the end of execution
-	gettimeofday(&end, NULL);
-
 	if (sendall (socket, msg, &len) == -1) {
 		perror ("sendall");
 		printf ("Only %d bytes sent.\n", len);
 	}	
 
 	fclose (db_file);
+	
+	//### Marks the end of execution ###//
+	gettimeofday(&end, NULL);
 
 	return timelapse(start, end);
 }
@@ -422,13 +413,6 @@ long change_stock_by_isbn (int socket) {
 	char buff [INT_LENGTH]; //Buffer for receiving new stock (as a string).
 	struct timeval start, end;
 	
-	// marks the start of execution
-	gettimeofday(&start, NULL);
-
-
-	//Initializes memory.
-	req_book = (book *) malloc (sizeof (book));
-
 	//Receives ISBN number from client.
 	recv_status = recv(socket, isbn, ISBN_LENGTH, 0);
 	if (recv_status == -1) {
@@ -437,8 +421,25 @@ long change_stock_by_isbn (int socket) {
 	if (recv_status == 0) {
         	perror("receive - connection closed unexpectedly");
 	}
-        isbn[recv_status] = '\0';
-        printf("isbn: %s\n", isbn);
+	isbn[recv_status] = '\0';
+	printf("isbn: %s\n", isbn);
+	
+	//Receives the new stock
+	recv_status = recv(socket, buff, INT_LENGTH, 0);
+	if (recv_status == -1) {
+        	perror("receive");
+	}
+	if (recv_status == 0) {
+        	perror("receive - connection closed unexpectedly");
+	}
+	buff[recv_status] = '\0';
+	printf("new stock: %s\n", buff);
+
+	//### Marks the start of execution ###//
+	gettimeofday(&start, NULL);
+
+	//Initializes memory.
+	req_book = (book *) malloc (sizeof (book));
 
 	//Gets the structs from the file and checks for the one with the required ISBN.
 	db_file = fopen ("./bookstore_database.bin", "rb+");
@@ -472,18 +473,7 @@ long change_stock_by_isbn (int socket) {
 	*/
 	
 	//Changes stock according to client.
-	recv_status = recv(socket, buff, INT_LENGTH, 0);
-	if (recv_status == -1) {
-        	perror("receive");
-	}
-	if (recv_status == 0) {
-        	perror("receive - connection closed unexpectedly");
-	}
-	buff[recv_status] = '\0';
-	printf("new stock: %s\n", buff);
-	
-	//new_stock = atoi (buff);
-	sscanf(buff, "%d", &new_stock);
+	new_stock = atoi (buff);
 	req_book->stock = new_stock;
 
 	//Writes changes to database.
@@ -502,6 +492,9 @@ long change_stock_by_isbn (int socket) {
 	}
 
 	free (req_book);
+	
+	//### Marks the end of execution ###//
+	gettimeofday(&end, NULL);
 
 	return timelapse(start, end);
 }
@@ -515,12 +508,6 @@ long get_stock_by_isbn (int socket) {
 	int recv_status;	
 	struct timeval start, end;
 	
-	// marks the start of execution
-	gettimeofday(&start, NULL);
-
-	//Initializes memory.
-	req_book = (book *) malloc (sizeof (book));
-
 	//Receives ISBN number from client.
 	recv_status = recv(socket, isbn, ISBN_LENGTH, 0);
 	if (recv_status == -1) {
@@ -529,17 +516,21 @@ long get_stock_by_isbn (int socket) {
 	if (recv_status == 0) {
         	perror("receive - connection closed unexpectedly");
 	}
-        isbn[recv_status] = '\0';
-        printf("isbn: %s\n", isbn);
+	isbn[recv_status] = '\0';
+	printf("isbn: %s\n", isbn);
+	
+	//### Marks the start of execution ###//
+	gettimeofday(&start, NULL);
+
+	//Initializes memory.
+	req_book = (book *) malloc (sizeof (book));
+
 
 	//ISBN found: sends the stock.
 	if (book_by_isbn (socket, isbn, req_book) == 1) { //Gets the book with "isbn" in "*req_book".
 		snprintf (msg, MAX_MSG, "%d\n", req_book->stock);
 		len = strlen (msg);
 		free (req_book);
-		
-		// marks the end of execution
-		gettimeofday(&end, NULL);
 		
 		if (sendall (socket, msg, &len) == -1) {
 			perror ("sendall");
@@ -551,15 +542,15 @@ long get_stock_by_isbn (int socket) {
 		len = strlen (msg);
 		free (req_book);
 		
-		// marks the end of execution
-		gettimeofday(&end, NULL);
-		
 		if (sendall (socket, msg, &len) == -1) {
 			perror ("sendall");
 			printf ("Only %d bytes sent.\n", len);
 		}
 	}
 
+	//### Marks the end of execution ###//
+	gettimeofday(&end, NULL);
+	
 	return timelapse(start, end);
 }
 

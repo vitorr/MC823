@@ -5,5 +5,4 @@ run:
 	./run.sh
 
 clean:
-	-rm file*.log
 	-rm *.out

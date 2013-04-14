@@ -5,20 +5,39 @@ import matplotlib.pyplot as plt
 
 menMeans = []
 menStd = []
-for i in range(2):
+for i in range(6):
     content = open('client_op' + str(i) + '.log', 'r').read()
     a = content.split('\n')
     a1 = [int(s) for s in a if len(s) > 0]
-    a2 = [int(s) for s in a2 if s > 0]
-    a3 = [int(s) for s in a3 if abs(s) < 100000]
+    a2 = [s for s in a1 if s > 0]
+    a3 = [s for s in a2 if abs(s) < 100000]
     b = np.array(a3)
-    menMeans.append( b.mean() )
-    menStd.append( b.std(dtype=np.float64) )
+    mean = np.nan_to_num( b.mean() )
+    std = np.nan_to_num( b.std(dtype=np.float64) )
+    menMeans.append( mean )
+    menStd.append( std )
 
 print menMeans
 print menStd
 
-N = 2
+womenMeans = []
+womenStd = []
+for i in range(6):
+    content = open('server_op' + str(i) + '.log', 'r').read()
+    a = content.split('\n')
+    a1 = [int(s) for s in a if len(s) > 0]
+    a2 = [s for s in a1 if s > 0]
+    a3 = [s for s in a2 if abs(s) < 100000]
+    b = np.array(a3)
+    mean = np.nan_to_num( b.mean() )
+    std = np.nan_to_num( b.std(dtype=np.float64) )
+    womenMeans.append( mean )
+    womenStd.append( std )
+
+print womenMeans
+print womenStd
+
+N = 6
 
 #menMeans = (20, 35, 30, 35, 27)
 #menStd =   (2, 3, 4, 1, 2)
@@ -32,13 +51,13 @@ rects1 = ax.bar(ind, menMeans, width, color='r', yerr=menStd)
 
 #womenMeans = (25, 32, 34, 20, 25)
 #womenStd =   (3, 5, 2, 3, 3)
-#rects2 = ax.bar(ind+width, womenMeans, width, color='y', yerr=womenStd)
+rects2 = ax.bar(ind+width, womenMeans, width, color='y', yerr=womenStd)
 
 # add some
 ax.set_ylabel('Scores')
 ax.set_title('Scores by group and gender')
 ax.set_xticks(ind+width)
-ax.set_xticklabels( ('G1', 'G2', 'G3', 'G4', 'G5') )
+ax.set_xticklabels( ('OP0', 'OP1', 'OP2', 'OP3', 'OP4', 'OP5') )
 
 #ax.legend( (rects1[0], rects2[0]), ('Men', 'Women') )
 

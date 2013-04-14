@@ -25,12 +25,12 @@
 
 //Functions for the network operations.
 //returns the time taken to receive the request
-long get_isbns_and_titles(int sockfd, char *op);
-long get_desc_by_isbn (int sockfd, char *op);
-long get_info_by_isbn (int sockfd, char *op);
-long get_all_infos (int sockfd, char *op);
-long change_stock_by_isbn (int sockfd, char *op);
-long get_stock_by_isbn (int sockfd, char *op);
+long long get_isbns_and_titles(int sockfd, char *op);
+long long get_desc_by_isbn (int sockfd, char *op);
+long long get_info_by_isbn (int sockfd, char *op);
+long long get_all_infos (int sockfd, char *op);
+long long change_stock_by_isbn (int sockfd, char *op);
+long long get_stock_by_isbn (int sockfd, char *op);
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 	int rv;
 	char s[INET6_ADDRSTRLEN];
 	int bookstore=0;
-	long mtime;
+	long long mtime;
 
 	//verify if the user has "bookstore" permission
 	if( !strcmp(argv[argc-1], "bookstore") )
@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
 			sprintf(fname, "../logs/client_op%s.log", op);
 			FILE *f = fopen(fname, "a");
 			//fprintf(f, "Elapsed time: %ld milliseconds\n", mtime);
-			fprintf(f, "%ld\n", mtime);
+			fprintf(f, "%lld\n", mtime);
 			fclose(f);
 		}
 		
@@ -202,14 +202,14 @@ int main(int argc, char *argv[])
 }
 
 
-long get_isbns_and_titles(int sockfd, char *op)
+long long get_isbns_and_titles(int sockfd, char *op)
 {
 	int len;
 	struct timeval start, end;
 	char buf[MAX_MSG];
 	int numbytes;
 
-	// marks the start of execution
+	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
 	
 	// sends the operation code
@@ -240,13 +240,13 @@ long get_isbns_and_titles(int sockfd, char *op)
 		}
 	}
 	
-	// marks the end of execution
+	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
 	
 	return timelapse(start, end);
 }
 
-long get_desc_by_isbn (int sockfd, char *op)
+long long get_desc_by_isbn (int sockfd, char *op)
 {
 	int len;
 	struct timeval start, end;
@@ -257,7 +257,7 @@ long get_desc_by_isbn (int sockfd, char *op)
 	printf("\nPlease type in the ISBN:\n");
 	scanf("%s", ISBN);
 
-	// marks the start of execution
+	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
 
 	// send the operation code
@@ -277,7 +277,7 @@ long get_desc_by_isbn (int sockfd, char *op)
 		exit(1);
 	}
 
-	// marks the end of execution
+	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
 
 	printf ("numbytes:%d\n", numbytes);
@@ -288,7 +288,7 @@ long get_desc_by_isbn (int sockfd, char *op)
 	return timelapse(start, end);
 }
 
-long get_info_by_isbn (int sockfd, char *op)
+long long get_info_by_isbn (int sockfd, char *op)
 {
 	int len;
 	struct timeval start, end;
@@ -299,7 +299,7 @@ long get_info_by_isbn (int sockfd, char *op)
 	printf("\nPlease type in the ISBN:\n");
 	scanf("%s", ISBN);
 
-	// marks the start of execution
+	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
 
 	// send the operation code
@@ -319,7 +319,7 @@ long get_info_by_isbn (int sockfd, char *op)
 		exit(1);
 	}
 
-	// marks the end of execution
+	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
 
 	printf ("numbytes:%d\n", numbytes);
@@ -330,12 +330,15 @@ long get_info_by_isbn (int sockfd, char *op)
 	return timelapse(start, end);
 }
 
-long get_all_infos (int sockfd, char *op)
+long long get_all_infos (int sockfd, char *op)
 {
 	int len;
 	struct timeval start, end;
 	char buf[MAX_MSG];
 	int numbytes;
+
+	//### Marks the start of execution ###//
+	gettimeofday(&start, NULL);
 
 	// send the operation code
 	len = 3;
@@ -365,10 +368,14 @@ long get_all_infos (int sockfd, char *op)
 		}
 	}
 
+
+	//### Marks the end of execution ###//
+	gettimeofday(&end, NULL);
+
 	return timelapse(start, end);
 }
 
-long change_stock_by_isbn (int sockfd, char *op)
+long long change_stock_by_isbn (int sockfd, char *op)
 {
 	int len;
 	struct timeval start, end;
@@ -383,6 +390,9 @@ long change_stock_by_isbn (int sockfd, char *op)
 	printf("\nPlease type in the new value:\n");
 	scanf("%s", stock);
 	printf("recebi isso aqui: %s\n", stock);
+
+	//### Marks the start of execution ###//
+	gettimeofday(&start, NULL);
 
 	// sends the operation code
 	len = OP_LENGTH;
@@ -409,7 +419,7 @@ long change_stock_by_isbn (int sockfd, char *op)
 		exit(1);
 	}
 
-	// marks the end of execution
+	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
 
 	printf ("numbytes:%d\n", numbytes);
@@ -420,7 +430,7 @@ long change_stock_by_isbn (int sockfd, char *op)
 	return timelapse(start, end);
 }
 
-long get_stock_by_isbn (int sockfd, char *op)
+long long get_stock_by_isbn (int sockfd, char *op)
 {
 	int len;
 	struct timeval start, end;
@@ -431,7 +441,7 @@ long get_stock_by_isbn (int sockfd, char *op)
 	printf("\nPlease type in the ISBN:\n");
 	scanf("%s", ISBN);
 
-	// marks the start of execution
+	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
 
 	// send the operation code
@@ -451,7 +461,7 @@ long get_stock_by_isbn (int sockfd, char *op)
 		exit(1);
 	}
 
-	// marks the end of execution
+	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
 
 	printf ("numbytes:%d\n", numbytes);
