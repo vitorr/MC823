@@ -186,8 +186,8 @@ int main(int argc, char *argv[])
 		//stores the time in the log
 		if( (op[0]-'0'<6)  && (op[0]-'0'>=0) )
 		{
-			char fname[20];
-			sprintf(fname, "file%s.log", op);
+			char fname[40];
+			sprintf(fname, "../logs/server_op%s.log", op);
 			FILE *f = fopen(fname, "a");
 			//fprintf(f, "Elapsed time: %ld milliseconds\n", mtime);
 			fprintf(f, "%ld\n", mtime);

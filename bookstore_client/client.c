@@ -184,14 +184,8 @@ int main(int argc, char *argv[])
 		
 		if( (op[0]-'0'<6)  && (op[0]-'0'>=0) )
 		{
-			/*long mtime, seconds, useconds;
-			seconds  = end.tv_sec  - start.tv_sec;
-			useconds = end.tv_usec - start.tv_usec;
-			mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
-			*/
-			
-			char fname[20];
-			sprintf(fname, "file%s.log", op);
+			char fname[40];
+			sprintf(fname, "../logs/client_op%s.log", op);
 			FILE *f = fopen(fname, "a");
 			//fprintf(f, "Elapsed time: %ld milliseconds\n", mtime);
 			fprintf(f, "%ld\n", mtime);
