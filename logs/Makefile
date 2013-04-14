@@ -2,20 +2,14 @@ all:
 	python graphs.py
 
 up:
-	scp server_op0.log ra091187@ssh.students.ic.unicamp.br:~/public_html/mc823/server_op0.log
-	scp server_op1.log ra091187@ssh.students.ic.unicamp.br:~/public_html/mc823/server_op1.log
-	scp server_op2.log ra091187@ssh.students.ic.unicamp.br:~/public_html/mc823/server_op2.log
-	scp server_op3.log ra091187@ssh.students.ic.unicamp.br:~/public_html/mc823/server_op3.log
-	scp server_op4.log ra091187@ssh.students.ic.unicamp.br:~/public_html/mc823/server_op4.log
-	scp server_op5.log ra091187@ssh.students.ic.unicamp.br:~/public_html/mc823/server_op5.log
+	for i in `seq 0 5` ; do \
+		scp server_op$$i.log ra091187@ssh.students.ic.unicamp.br:~/public_html/mc823/server_op$$i.log ; \
+	done
 
 down:
-	wget www.students.ic.unicamp.br/~ra091187/mc823/server_op0.log
-	wget www.students.ic.unicamp.br/~ra091187/mc823/server_op1.log
-	wget www.students.ic.unicamp.br/~ra091187/mc823/server_op2.log
-	wget www.students.ic.unicamp.br/~ra091187/mc823/server_op3.log
-	wget www.students.ic.unicamp.br/~ra091187/mc823/server_op4.log
-	wget www.students.ic.unicamp.br/~ra091187/mc823/server_op5.log
+	for i in `seq 0 5` ; do \
+		curl -s http://www.students.ic.unicamp.br/~ra091187/mc823/server_op$$i.log > server_op$$i.log ; \
+	done
 
 clean:
 	-rm *.log
