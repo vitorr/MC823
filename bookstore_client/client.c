@@ -1,5 +1,8 @@
 /*
-** client.c -- a stream socket client demo
+ Authors: Fernando Lucchesi Bastos Jurema RA 091187
+	  Vitor Roberto de Almeida Castro RA 093241
+ Online bookstore - Main execution file of the client application. Administers communication between the client and the server,
+ implementing six operations to be done in the database.
 */
 
 #include <stdio.h>
@@ -17,11 +20,9 @@
 
 #include "../definitions.h"  //Definitions of the bookstore application.
 
-#define PORT "8001" // the port client will be connecting to 
+#define PORT "8001" // The port the client will be connecting to.
 
-#define MAXDATASIZE 100 // max number of bytes we can get at once 
-
-#define QUIT 6 // menu option to quit
+#define QUIT 6 //Menu option to quit.
 
 //Functions for the network operations.
 //returns the time taken to receive the request

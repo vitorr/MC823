@@ -1,5 +1,9 @@
 /*
-** server.c -- a stream socket server demo
+ Projeto 1 de MC823 - Laboratório de Teleprocessamento e Redes
+ Grupo: Fernando Lucchesi Bastos Jurema RA 091187
+	Vitor Roberto de Almeida Castro RA 093241
+ Online bookstore - Main execution file of the server application. Administers communication between the client and the server,
+ implementing six operations to be done in the database.
 */
 
 #include <stdio.h>
@@ -19,12 +23,11 @@
 //Definitions specific to the bookstore application.
 #include "../definitions.h"
 
-#define PORT "8001"  // the port users will be connecting to
+#define PORT "8001"  // The port the server offers up to clients will be connecting to.
 
-#define BACKLOG 10     // how many pending connections queue will hold
+#define BACKLOG 10     // How many pending connections queue will hold.
 
-//Functions for the database operations.
-//returns the time taken to process the request
+//Functions for the database operations which return the time taken to process the request.
 long get_isbns_and_titles(int socket);
 long get_desc_by_isbn (int socket);
 long get_info_by_isbn (int socket);
