@@ -109,8 +109,8 @@ int main(int argc, char *argv[])
 	char ip[100];
     system("curl -s http://www.students.ic.unicamp.br/~ra091187/mc823/ip.txt > ip.txt");
 	// switches back the 1s and 2s (changed for security)
-    system("cat ip.txt | sed s/1/#/g | sed s/2/1/g | sed s/#/2/g > ip.txt");
-    FILE *f = fopen("ip.txt", "r");
+    system("cat ip.txt | sed s/1/#/g | sed s/2/1/g | sed s/#/2/g > ip2.txt");
+    FILE *f = fopen("ip2.txt", "r");
     fscanf(f, "%s", ip);
     fclose(f);
 
