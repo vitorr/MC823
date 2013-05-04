@@ -20,7 +20,7 @@
 
 #include "../definitions.h"  //Definitions of the bookstore application.
 
-#define PORT "8001" // The port the client will be connecting to.
+#define PORT "8002" // The port the client will be connecting to.
 
 #define QUIT 6 //Menu option to quit.
 
@@ -43,40 +43,46 @@ void *get_in_addr(struct sockaddr *sa)
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-// recvs and prints everything while there is no '|'
-void recv_print_all(int sockfd)
+//Receives and prints the server reponse up to the '|'
+//(or, if the message was not completely received, prints the received part).
+void recvfrom_print_all(int sockfd)
 {
 	char buf[MAX_MSG];
-	int numbytes;
-	
-	while(1)
-	{
-		int end=0, i;
-		numbytes = recv(sockfd, buf, MAX_MSG-1, 0);
-		if(numbytes!=-1){
-			buf[numbytes] = '\0';
-			for(i=0; i<numbytes; i++)
-				if(buf[i]=='|') {
-					buf[i]='\0';
-					end = 1;
-				}
-			printf("%s", buf);
-			if(end) break;
-		}
-		else {
-			perror("recv");
-			exit(1);
-		}
+	int numbytes;	
+	//"complete" = 1 if the full message was received.
+	int complete=0, i;
+	//Indicates from whom we received.
+	struct sockaddr_storage from_addr;
+	socklen_t from_len;
+
+	numbytes = recvfrom(sockfd, buf, MAX_MSG-1, 0, (struct sockaddr *)&from_addr, &from_len);
+	if(numbytes!=-1){
+		buf[numbytes] = '\0';
+		for(i=0; i<numbytes; i++)
+			if(buf[i]=='|') {
+				buf[i]='\0';
+				complete = 1;
+			}
+		printf("%s", buf);
+	} else {
+		perror("recv");
+		exit(1);
 	}
 	printf ("numbytes:%d\n", numbytes);
-	printf("client: received '%s'\n",buf);
+
+	if (complete == 0) {
+		printf("Message only partially received\n");
+	}
 	return;
 }
+
+//Communicate with the server.
+struct addrinfo *server;
 
 int main(int argc, char *argv[])
 {
 	int sockfd;  
-	struct addrinfo hints, *servinfo, *p;
+	struct addrinfo hints, *servinfo;
 	int rv;
 	char s[INET6_ADDRSTRLEN];
 	int bookstore=0;
@@ -102,10 +108,10 @@ int main(int argc, char *argv[])
 
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_socktype = SOCK_DGRAM;
 
 	//VERSION THAT GETS IP FROM THE WEB
-	// gets the server ip from the web
+	//Gets the server ip from the web
 	char ip[100];
     system("curl -s http://www.students.ic.unicamp.br/~ra091187/mc823/ip.txt > ip.txt");
 	// switches back the 1s and 2s (changed for security)
@@ -130,35 +136,27 @@ int main(int argc, char *argv[])
 	}
 	//End of changes in debug version.*/
 
-	// loop through all the results and connect to the first we can
-	for(p = servinfo; p != NULL; p = p->ai_next) {
-		if ((sockfd = socket(p->ai_family, p->ai_socktype,
-				p->ai_protocol)) == -1) {
+	//Loop through all the results and connect to the first we can
+	for(server = servinfo; server != NULL; server = server->ai_next) {
+		if ((sockfd = socket(server->ai_family, server->ai_socktype,
+				server->ai_protocol)) == -1) {
 			perror("client: socket");
-			continue;
-		}
-
-		if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-			close(sockfd);
-			perror("client: connect");
 			continue;
 		}
 
 		break;
 	}
 
-	if (p == NULL) {
-		fprintf(stderr, "client: failed to connect\n");
+	if (server == NULL) {
+		fprintf(stderr, "Client: Failed to get server\n");
 		return 2;
 	}
 
-	// connecting to the server
-	inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
+	//Getting server information.
+	inet_ntop(server->ai_family, get_in_addr((struct sockaddr *)server->ai_addr),
 			s, sizeof s);
-	printf("client: connecting to %s\n", s);
+	printf("Client: communicating with server %s\n", s);
 
-	freeaddrinfo(servinfo); // all done with this structure
-	
 	int quit=0;
 	while(!quit)
 	{
@@ -228,6 +226,7 @@ int main(int argc, char *argv[])
 
 	close(sockfd);
 
+	freeaddrinfo(servinfo); //Client done with this structure.	
 
 	return 0;
 }
@@ -241,15 +240,14 @@ long long get_isbns_and_titles(int sockfd, char *op)
 	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
 	
-	// sends the operation code
-	len = 3;
-	if (sendall(sockfd, op, &len) == -1) {
-		perror ("sendall");
-		printf ("Only %d bytes sent.\n", len);
+	//Sends the operation code.
+	len = OP_LENGTH;
+	if (sendto (sockfd, op, len, 0, server->ai_addr, server->ai_addrlen) == -1) {
+		perror ("sendto");
 	}
 
-	// recvs and prints everything while there is no '|'
-	recv_print_all(sockfd);
+	//Receives server response.
+	recvfrom_print_all(sockfd);
 	
 	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
@@ -262,6 +260,7 @@ long long get_desc_by_isbn (int sockfd, char *op)
 	struct timeval start, end;
 	int len;
 	char ISBN[ISBN_LENGTH];
+	char msg[ISBN_LENGTH + 1 + OP_LENGTH];
 
 	printf("\nPlease type in the ISBN:\n");
 	scanf("%s", ISBN);
@@ -269,19 +268,15 @@ long long get_desc_by_isbn (int sockfd, char *op)
 	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
 
-	// send the operation code
-	len = 3;
-	if (sendall(sockfd, op, &len) == -1) {
-		perror ("sendall");
-		printf ("Only %d bytes sent.\n", len);
+	//Sends the operation code and the ISBN in the same message.
+	sprintf (msg, "%c|%s", op[0], ISBN);
+	len = OP_LENGTH + 1 + ISBN_LENGTH;
+	if (sendto (sockfd, msg, len, 0, server->ai_addr, server->ai_addrlen) == -1) {
+		perror ("sendto");
 	}
 
-	// sends the ISBN
-	len = strlen (ISBN);
-	sendall(sockfd, ISBN, &len);
-
-	// recvs and prints everything while there is no '|'
-	recv_print_all(sockfd);
+	//Receives server response.
+	recvfrom_print_all(sockfd);
 
 	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
@@ -294,6 +289,7 @@ long long get_info_by_isbn (int sockfd, char *op)
 	struct timeval start, end;
 	int len;
 	char ISBN[ISBN_LENGTH];
+	char msg[OP_LENGTH + 1 + ISBN_LENGTH];
 
 	printf("\nPlease type in the ISBN:\n");
 	scanf("%s", ISBN);
@@ -301,19 +297,15 @@ long long get_info_by_isbn (int sockfd, char *op)
 	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
 
-	// send the operation code
-	len = 3;
-	if (sendall(sockfd, op, &len) == -1) {
-		perror ("sendall");
-		printf ("Only %d bytes sent.\n", len);
+	//Sends the operation code and the ISBN in the same message.
+	sprintf (msg, "%c|%s", op[0], ISBN);
+	len = OP_LENGTH + 1 + ISBN_LENGTH;
+	if (sendto (sockfd, msg, len, 0, server->ai_addr, server->ai_addrlen) == -1) {
+		perror ("sendto");
 	}
 
-	// sends the ISBN
-	len = strlen (ISBN);
-	sendall(sockfd, ISBN, &len);
-
-	// recvs and prints everything while there is no '|'
-	recv_print_all(sockfd);
+	//Receives server response.
+	recvfrom_print_all(sockfd);
 
 	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
@@ -329,15 +321,14 @@ long long get_all_infos (int sockfd, char *op)
 	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
 
-	// send the operation code
-	len = 3;
-	if (sendall(sockfd, op, &len) == -1) {
-		perror ("sendall");
-		printf ("Only %d bytes sent.\n", len);
+	//Sends the operation code.
+	len = OP_LENGTH;
+	if (sendto (sockfd, op, len, 0, server->ai_addr, server->ai_addrlen) == -1) {
+		perror ("sendto");
 	}
 
-	// recvs and prints everything while there is no '|'
-	recv_print_all(sockfd);
+	//Receives server response.
+	recvfrom_print_all(sockfd);
 
 	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
@@ -350,39 +341,27 @@ long long change_stock_by_isbn (int sockfd, char *op)
 	struct timeval start, end;
 	int len;
 	char ISBN[ISBN_LENGTH];
-	char stock[20];
+	char stock[INT_LENGTH];
+	char msg[OP_LENGTH + 2 + ISBN_LENGTH + INT_LENGTH];
 
 	printf("\nPlease type in the ISBN:\n");
 	scanf("%s", ISBN);
 	//printf("\nCurrent stock: %d\n", 6666);
 	printf("\nPlease type in the new value:\n");
 	scanf("%s", stock);
-	printf("recebi isso aqui: %s\n", stock);
 
 	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
 
-	// sends the operation code
-	len = OP_LENGTH;
-	if (sendall(sockfd, op, &len) == -1) {
-		perror ("sendall");
-		printf ("Only %d bytes sent.\n", len);
-	}
-	// sends the ISBN
-	len = ISBN_LENGTH;
-	if (sendall(sockfd, ISBN, &len) == -1) {
-		perror ("sendall");
-		printf ("Only %d bytes sent.\n", len);
-	}
-	// sends the new stock
-	len = INT_LENGTH;
-	if (sendall(sockfd, stock, &len) == -1) {
-		perror ("sendall");
-		printf ("Only %d bytes sent.\n", len);
+	//Sends the operation code, the ISBN and the new stock in the same message.
+	sprintf (msg, "%c|%s|%s", op[0], ISBN, stock);
+	len = OP_LENGTH + 2 + ISBN_LENGTH + INT_LENGTH;
+	if (sendto (sockfd, msg, len, 0, server->ai_addr, server->ai_addrlen) == -1) {
+		perror ("sendto");
 	}
 
-	// recvs and prints everything while there is no '|'
-	recv_print_all(sockfd);
+	//Receives server response.
+	recvfrom_print_all(sockfd);
 
 	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
@@ -395,6 +374,7 @@ long long get_stock_by_isbn (int sockfd, char *op)
 	struct timeval start, end;
 	int len;
 	char ISBN[ISBN_LENGTH];
+	char msg[OP_LENGTH + 1 + ISBN_LENGTH];
 
 	printf("\nPlease type in the ISBN:\n");
 	scanf("%s", ISBN);
@@ -402,19 +382,15 @@ long long get_stock_by_isbn (int sockfd, char *op)
 	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
 
-	// send the operation code
-	len = 3;
-	if (sendall(sockfd, op, &len) == -1) {
-		perror ("sendall");
-		printf ("Only %d bytes sent.\n", len);
+	//Sends the operation code and the ISBN in the same message.
+	sprintf (msg, "%c|%s", op[0], ISBN);
+	len = OP_LENGTH + 1 + ISBN_LENGTH;
+	if (sendto (sockfd, msg, len, 0, server->ai_addr, server->ai_addrlen) == -1) {
+		perror ("sendto");
 	}
 
-	// sends the ISBN
-	len = strlen (ISBN);
-	sendall(sockfd, ISBN, &len);
-
-	// recvs and prints everything while there is no '|'
-	recv_print_all(sockfd);
+	//Receives server response.
+	recvfrom_print_all(sockfd);
 
 	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
