@@ -19,6 +19,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <sys/time.h>
+#include <fcntl.h>
 
 //Definitions specific to the bookstore application.
 #include "../definitions.h"
@@ -113,7 +114,9 @@ int main(int argc, char *argv[])
 	}
 
 	freeaddrinfo(servinfo);
-
+	
+	//Set socket to non-blocking.
+	fcntl(sockfd, F_SETFL, O_NONBLOCK);
 
     //Main "accept()" loop.
     while(1) {  
@@ -122,8 +125,9 @@ int main(int argc, char *argv[])
 		addr_len = sizeof their_addr;
 		if ((numbytes = recvfrom(sockfd, buf, MAX_MSG-1 , 0,
 			(struct sockaddr *)&their_addr, &addr_len)) == -1) {
-			perror("recvfrom");
-			exit(1);
+			//perror("recvfrom");
+			//exit(1);
+			continue;
 		}
 
 		// Gets the ip of the client
@@ -187,8 +191,8 @@ int main(int argc, char *argv[])
 //Obtains the ISBN and title of each book in the database.
 long get_isbns_and_titles(int sockfd, char* buf, struct sockaddr *client_addr) {
 	FILE * db_file;
-	char msg [MAX_MSG]=""; //Message to be sent to client: ISBN and title.
-	char tmp [MAX_MSG]=""; //Message to be sent to client: ISBN and title.
+	char msg [MAX_MSG]=""; //Message to be sent to client
+	char tmp [MAX_MSG]=""; //Temporary variable
 	book b;
 	struct timeval start, end;
 	int numbytes;
@@ -205,6 +209,9 @@ long get_isbns_and_titles(int sockfd, char* buf, struct sockaddr *client_addr) {
 	}
 	fclose (db_file);
 
+	//Sends last information ("|" string) to indicate the end of the database.
+	strncat(msg, "|", MAX_MSG-1);
+	
 	// Sends everything
 	if ((numbytes = sendto(sockfd, msg, strlen(msg), 0,
 			 client_addr, sizeof(*client_addr))) == -1) {
@@ -220,53 +227,47 @@ long get_isbns_and_titles(int sockfd, char* buf, struct sockaddr *client_addr) {
 
 //Obtains the description of the book with a certain ISBN.
 long get_desc_by_isbn (int sockfd, char* buf, struct sockaddr *client_addr) {
-	char msg [MAX_MSG]; //Message to be sent to client: book's description.
-	int len;
+	char msg [MAX_MSG]=""; //Message to be sent to client
+	char tmp [MAX_MSG]=""; //Temporary variable
 	book * req_book; //Book with the required ISBN.
 	char isbn [ISBN_LENGTH];
-	int recv_status;	
 	struct timeval start, end;
+	int numbytes;
 
-	//Receives ISBN number from client.
-	recv_status = recv(sockfd, isbn, ISBN_LENGTH, 0);
-	if (recv_status == -1) {
-        	perror("receive");
-	}
-	if (recv_status == 0) {
-        	perror("receive - connection closed unexpectedly");
-	}
-        isbn[recv_status] = '\0';
-        printf("isbn: %s\n", isbn);
 
 	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
+	
+	//Gets the ISBN number from client.
+	sscanf(buf, "%[^|]|%[^|]", tmp, isbn);
+	printf("isbn: %s\n", isbn);
+	
 	
 	//Initializes memory.
 	req_book = (book *) malloc (sizeof (book));
 
 	//ISBN found: sends the description.
 	if (book_by_isbn (sockfd, isbn, req_book) == 1) { //Gets the book with "isbn" in "*req_book".
-		strcpy (msg, req_book->description);
-		strcat (msg, "|");
-		len = strlen (msg);
+		strcpy (tmp, req_book->description);
+		strcat (tmp, "|");
 		free (req_book);
 		
-		if (sendall (sockfd, msg, &len) == -1) {
-			perror ("sendall");
-			printf ("Only %d bytes sent.\n", len);
-		}
+		strncat(msg, tmp, MAX_MSG-2);
 	//ISBN not found: replies accordingly.
 	} else {
-		strcpy (msg, "ISBN not in database");
-		len = strlen (msg);
+		strcpy (msg, "ISBN not in database\n");
 		free (req_book);
 		
-		if (sendall (sockfd, msg, &len) == -1) {
-			perror ("sendall");
-			printf ("Only %d bytes sent.\n", len);
-		}
+		strncat(msg, tmp, MAX_MSG-2);
 	}
 	
+	// Sends everything
+	if ((numbytes = sendto(sockfd, msg, strlen(msg), 0,
+			 client_addr, sizeof(*client_addr))) == -1) {
+		perror("talker: sendto");
+		exit(1);
+	}
+
 	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
 
@@ -275,26 +276,19 @@ long get_desc_by_isbn (int sockfd, char* buf, struct sockaddr *client_addr) {
 
 //Obtains all of the information of the book with a certain ISBN.
 long get_info_by_isbn (int sockfd, char* buf, struct sockaddr *client_addr) {
-	char msg [MAX_MSG]; //Message to be sent to client: full information.
-	int len;
+	char msg [MAX_MSG]=""; //Message to be sent to client
+	char tmp [MAX_MSG]=""; //Temporary variable
 	book * req_book; //Book with the required ISBN.
 	char isbn [ISBN_LENGTH];
-	int recv_status;	
 	struct timeval start, end;
-	
-	//Receives ISBN number from client.
-	recv_status = recv(sockfd, isbn, ISBN_LENGTH, 0);
-	if (recv_status == -1) {
-        	perror("receive");
-	}
-	if (recv_status == 0) {
-        	perror("receive - connection closed unexpectedly");
-	}
-	isbn[recv_status] = '\0';
-	printf("isbn: %s\n", isbn);
+	int numbytes;
 	
 	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
+	
+	//Gets the ISBN number from client.
+	sscanf(buf, "%[^|]|%[^|]", tmp, isbn);
+	printf("isbn: %s\n", isbn);
 	
 	//Initializes memory.
 	req_book = (book *) malloc (sizeof (book));
@@ -302,25 +296,23 @@ long get_info_by_isbn (int sockfd, char* buf, struct sockaddr *client_addr) {
 	//ISBN found: sends the information.
 	if (book_by_isbn (sockfd, isbn, req_book) == 1) { //Gets the book with "isbn" in "*req_book".
 		//Builds the message string.
-		snprintf (msg, MAX_MSG, "Title: %s\nAuthors: %s\n%s\n%s\nDescription: %s\nPublisher: %s\nPublishing year: %d\nISBN: %s\nStock: %d\n\n|", req_book->title, req_book->authors[0].name, req_book->authors[1].name, req_book->authors[2].name, req_book->description, req_book->publisher, req_book->publishing_year, req_book->isbn, req_book->stock);
-		len = strlen (msg);
+		snprintf (tmp, MAX_MSG, "Title: %s\nAuthors: %s\n%s\n%s\nDescription: %s\nPublisher: %s\nPublishing year: %d\nISBN: %s\nStock: %d\n\n|", req_book->title, req_book->authors[0].name, req_book->authors[1].name, req_book->authors[2].name, req_book->description, req_book->publisher, req_book->publishing_year, req_book->isbn, req_book->stock);
 		
 		free (req_book);
 
-
-		if (sendall (sockfd, msg, &len) == -1) {
-			perror ("sendall");
-			printf ("Only %d bytes sent.\n", len);
-		}
+		strncat(msg, tmp, MAX_MSG-2);
 	//ISBN not found: replies accordingly.
 	} else {
-		strcpy (msg, "ISBN not in database");
-		len = strlen (msg);
+		strcpy (tmp, "ISBN not in database\n");
 		
-		if (sendall (sockfd, msg, &len) == -1) {
-			perror ("sendall");
-			printf ("Only %d bytes sent.\n", len);
-		}
+		strncat(msg, tmp, MAX_MSG-2);
+	}
+	
+	// Sends everything
+	if ((numbytes = sendto(sockfd, msg, strlen(msg), 0,
+			 client_addr, sizeof(*client_addr))) == -1) {
+		perror("talker: sendto");
+		exit(1);
 	}
 
 	//### Marks the end of execution ###//
@@ -333,10 +325,11 @@ long get_info_by_isbn (int sockfd, char* buf, struct sockaddr *client_addr) {
 //title, authors, description, publisher, publishing year, ISBN and stock.
 long get_all_infos (int sockfd, char* buf, struct sockaddr *client_addr) {
 	FILE * db_file;
-	char msg [MAX_MSG]; //Message to be sent to client: complete information.
-	int len;
+	char msg [MAX_MSG+2]=""; //Message to be sent to client
+	char tmp [MAX_MSG+2]=""; //Temporary variable
 	book b;
 	struct timeval start, end;
+	int numbytes;
 	
 	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
@@ -345,25 +338,23 @@ long get_all_infos (int sockfd, char* buf, struct sockaddr *client_addr) {
 	db_file = fopen ("./bookstore_database.bin", "rb");
 	while ((fread (&b, sizeof (book), 1, db_file)) == 1) {
 		//Sends reply to be printed on the client.
-		snprintf (msg, MAX_MSG, "Title: %s\nAuthors: %s\n%s\n%s\nDescription: %s\nPublisher: %s\nPublishing year: %d\nISBN: %s\nStock: %d\n\n", b.title, b.authors[0].name, b.authors[1].name, b.authors[2].name, b.description, b.publisher, b.publishing_year, b.isbn, b.stock);
-		len = strlen (msg);
+		snprintf (tmp, MAX_MSG, "Title: %s\nAuthors: %s\n%s\n%s\nDescription: %s\nPublisher: %s\nPublishing year: %d\nISBN: %s\nStock: %d\n\n", b.title, b.authors[0].name, b.authors[1].name, b.authors[2].name, b.description, b.publisher, b.publishing_year, b.isbn, b.stock);
 		
-		if (sendall (sockfd, msg, &len) == -1) {
-			perror ("sendall");
-			printf ("Only %d bytes sent.\n", len);
-		}	
+		if(strlen(tmp) + strlen(msg) < MAX_MSG)
+			strncat(msg, tmp, MAX_MSG-2);
 	}
 
 	//Sends last information ("|" string) to indicate the end of the database.
-	snprintf (msg, MAX_MSG, "|"); 
-	len = strlen (msg);
-
-	if (sendall (sockfd, msg, &len) == -1) {
-		perror ("sendall");
-		printf ("Only %d bytes sent.\n", len);
-	}	
+	strncat(msg, "|", MAX_MSG-1);
 
 	fclose (db_file);
+	
+	// Sends everything
+	if ((numbytes = sendto(sockfd, msg, strlen(msg), 0,
+			 client_addr, sizeof(*client_addr))) == -1) {
+		perror("talker: sendto");
+		exit(1);
+	}
 	
 	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
@@ -376,42 +367,26 @@ long get_all_infos (int sockfd, char* buf, struct sockaddr *client_addr) {
 //changes it and shows change confirmation.
 //Only for the user with special permissions ("Bookstore").
 long change_stock_by_isbn (int sockfd, char* buf, struct sockaddr *client_addr) {
-	char msg [MAX_MSG]; //Message to be sent to client: Current stock and new stock.
-	int len;
+	char msg [MAX_MSG]=""; //Message to be sent to client
+	char tmp [MAX_MSG]=""; //Temporary variable
 	book * req_book; //Book with the required ISBN.
 	char isbn [ISBN_LENGTH];
-	int recv_status;
 	book b; //Auxiliary.
 	FILE * db_file;
 	int find = 0; //Flag which indicates if the required ISBN was found (1) or not (0).
 	int new_stock;
-	char buff [INT_LENGTH]; //Buffer for receiving new stock (as a string).
 	struct timeval start, end;
+	int numbytes;
 	
-	//Receives ISBN number from client.
-	recv_status = recv(sockfd, isbn, ISBN_LENGTH, 0);
-	if (recv_status == -1) {
-        	perror("receive");
-	}
-	if (recv_status == 0) {
-        	perror("receive - connection closed unexpectedly");
-	}
-	isbn[recv_status] = '\0';
-	printf("isbn: %s\n", isbn);
 	
-	//Receives the new stock
-	recv_status = recv(sockfd, buff, INT_LENGTH, 0);
-	if (recv_status == -1) {
-        	perror("receive");
-	}
-	if (recv_status == 0) {
-        	perror("receive - connection closed unexpectedly");
-	}
-	buff[recv_status] = '\0';
-	printf("new stock: %s\n", buff);
-
 	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
+	
+	//Gets the ISBN number and new stock from client.
+	sscanf(buf, "%[^|]|%[^|]|%d", tmp, isbn, &new_stock);
+	printf("isbn: %s\n", isbn);
+	printf("stock: %d\n", new_stock);
+	
 
 	//Initializes memory.
 	req_book = (book *) malloc (sizeof (book));
@@ -428,27 +403,17 @@ long change_stock_by_isbn (int sockfd, char* buf, struct sockaddr *client_addr) 
 
 	//ISBN not found: replies accordingly and ends function.
 	if (find == 0) {
-		strcpy (msg, "ISBN not in database");
-		len = strlen (msg);
-		if (sendall (sockfd, msg, &len) == -1) {
-			perror ("sendall");
-			printf ("Only %d bytes sent.\n", len);
+		strcpy (msg, "ISBN not in database\n:");
+		// Sends everything
+		if ((numbytes = sendto(sockfd, msg, strlen(msg), 0,
+				 client_addr, sizeof(*client_addr))) == -1) {
+			perror("talker: sendto");
+			exit(1);
 		}
 		return 0;
 	}
 
-	//Informs current stock.
-	/*
-	snprintf (msg, MAX_MSG, "Current stock: %d\n", req_book->stock);
-	len = strlen (msg);
-	if (sendall (sockfd, msg, &len) == -1) {
-		perror ("sendall");
-		printf ("Only %d bytes sent.\n", len);
-	}
-	*/
-	
 	//Changes stock according to client.
-	new_stock = atoi (buff);
 	req_book->stock = new_stock;
 
 	//Writes changes to database.
@@ -460,10 +425,12 @@ long change_stock_by_isbn (int sockfd, char* buf, struct sockaddr *client_addr) 
 
 	//Informs new stock.
 	snprintf (msg, MAX_MSG, "Operation complete!\nNew stock: %d\n|", new_stock);
-	len = strlen (msg);
-	if (sendall (sockfd, msg, &len) == -1) {
-		perror ("sendall");
-		printf ("Only %d bytes sent.\n", len);
+	
+	// Sends everything
+	if ((numbytes = sendto(sockfd, msg, strlen(msg), 0,
+			 client_addr, sizeof(*client_addr))) == -1) {
+		perror("talker: sendto");
+		exit(1);
 	}
 
 	free (req_book);
@@ -476,53 +443,42 @@ long change_stock_by_isbn (int sockfd, char* buf, struct sockaddr *client_addr) 
 
 //Obtains the number of copies (stock) of the book with a certain ISBN.
 long get_stock_by_isbn (int sockfd, char* buf, struct sockaddr *client_addr) {
-	char msg [MAX_MSG]; //Message to be sent to client: stock.
-	int len;
+	char msg [MAX_MSG]=""; //Message to be sent to client
+	char tmp [MAX_MSG]=""; //Temporary variable
 	book * req_book; //Book with the required ISBN.
 	char isbn [ISBN_LENGTH];
-	int recv_status;	
 	struct timeval start, end;
+	int numbytes;
 	
-	//Receives ISBN number from client.
-	recv_status = recv(sockfd, isbn, ISBN_LENGTH, 0);
-	if (recv_status == -1) {
-        	perror("receive");
-	}
-	if (recv_status == 0) {
-        	perror("receive - connection closed unexpectedly");
-	}
-	isbn[recv_status] = '\0';
-	printf("isbn: %s\n", isbn);
 	
 	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
+	
+	//Receives ISBN number from client.
+	sscanf(buf, "%[^|]|%[^|]", tmp, isbn);
+	printf("isbn: %s\n", isbn);
+
 
 	//Initializes memory.
 	req_book = (book *) malloc (sizeof (book));
 
-
 	//ISBN found: sends the stock.
 	if (book_by_isbn (sockfd, isbn, req_book) == 1) { //Gets the book with "isbn" in "*req_book".
 		snprintf (msg, MAX_MSG, "%d\n|", req_book->stock);
-		len = strlen (msg);
-		free (req_book);
-		
-		if (sendall (sockfd, msg, &len) == -1) {
-			perror ("sendall");
-			printf ("Only %d bytes sent.\n", len);
-		}
 	//ISBN not found: replies accordingly.
 	} else {
-		strcpy (msg, "ISBN not in database");
-		len = strlen (msg);
-		free (req_book);
-		
-		if (sendall (sockfd, msg, &len) == -1) {
-			perror ("sendall");
-			printf ("Only %d bytes sent.\n", len);
-		}
+		strcpy (msg, "ISBN not in database\n");
 	}
+	
+	free (req_book);
 
+	// Sends everything
+	if ((numbytes = sendto(sockfd, msg, strlen(msg), 0,
+			 client_addr, sizeof(*client_addr))) == -1) {
+		perror("talker: sendto");
+		exit(1);
+	}
+	
 	//### Marks the end of execution ###//
 	gettimeofday(&end, NULL);
 	
