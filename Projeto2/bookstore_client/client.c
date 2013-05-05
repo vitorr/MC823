@@ -3,6 +3,7 @@
 	  Vitor Roberto de Almeida Castro RA 093241
  Online bookstore - Main execution file of the client application. Administers communication between the client and the server,
  implementing six operations to be done in the database.
+ Uses the UDP protocol for comparison with its TCP counterpart.
 */
 
 #include <stdio.h>
@@ -15,12 +16,13 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <fcntl.h>
 
 #include <arpa/inet.h>
 
 #include "../definitions.h"  //Definitions of the bookstore application.
 
-#define PORT "8002" // The port the client will be connecting to.
+#define PORT "8002" // The port the client will use.
 
 #define QUIT 6 //Menu option to quit.
 
@@ -33,7 +35,10 @@ long long get_all_infos (int sockfd, char *op);
 long long change_stock_by_isbn (int sockfd, char *op);
 long long get_stock_by_isbn (int sockfd, char *op);
 
-// get sockaddr, IPv4 or IPv6:
+//Communicate with the server.
+struct addrinfo *server;
+
+//Gets sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
 {
 	if (sa->sa_family == AF_INET) {
@@ -52,10 +57,46 @@ void recvfrom_print_all(int sockfd)
 	//"complete" = 1 if the full message was received.
 	int complete=0, i;
 	//Indicates from whom we received.
-	struct sockaddr_storage from_addr;
+	struct sockaddr from_addr;
 	socklen_t from_len;
+	//For using "select()" (non-blocking "recvfrom()").
+	fd_set read_socket_set;
+	struct timeval timeout; 
+	int ret;
+	int count = 0;
+	struct timeval start, end;
 
-	numbytes = recvfrom(sockfd, buf, MAX_MSG-1, 0, (struct sockaddr *)&from_addr, &from_len);
+/*	//Prepare for "select()".
+	timeout.tv_sec = 2; //Timeout in seconds.
+	FD_ZERO (&read_socket_set);
+	FD_SET (sockfd, &read_socket_set);
+
+	//Selects the socket which is ready (in this case, we only have one).
+	//If the timeout is exceeded, the message was probably lost by UDP,
+	//so we ignore trying to receive this message.
+	printf ("Waiting...");
+	ret = select (sockfd + 1, &read_socket_set, NULL, NULL, &timeout);
+	printf ("Got out!");
+	//if (!FD_ISSET (sockfd, &read_socket_set)) {
+	if (ret < 1) {
+		printf ("The message was lost (not received from the server).\n");
+		return;
+	}*/
+
+	//Receives reply from the server.
+	gettimeofday(&start, NULL);
+	while (	(numbytes = recvfrom(sockfd, buf, MAX_MSG-1, 0, &from_addr, &from_len)) == -1) {
+		gettimeofday(&end, NULL);
+		if (timelapse (start, end) >= 2000000) break;
+	}
+//	numbytes = recvfrom(sockfd, buf, MAX_MSG-1, 0, &from_addr, &from_len);
+	/* Testing identity of the server: not necessary for the application.
+	//Checks if the sender is indeed the server.
+	if (from_len != server->ai_addrlen || memcmp(server->ai_addr, &from_addr, from_len) != 0) {
+		printf("Client received a message from a peer other than the server. This message was ignored.\n");
+	//Printing.
+	} else {*/
+	//Prints the received buffer up until the termination character ("|").
 	if(numbytes!=-1){
 		buf[numbytes] = '\0';
 		for(i=0; i<numbytes; i++)
@@ -68,19 +109,16 @@ void recvfrom_print_all(int sockfd)
 		perror("recv");
 		exit(1);
 	}
-	printf ("numbytes:%d\n", numbytes);
-
+	
 	if (complete == 0) {
 		printf("Message only partially received\n");
 	}
 	return;
 }
 
-//Communicate with the server.
-struct addrinfo *server;
 
-int main(int argc, char *argv[])
-{
+
+int main (int argc, char *argv[]) {
 	int sockfd;  
 	struct addrinfo hints, *servinfo;
 	int rv;
@@ -88,7 +126,7 @@ int main(int argc, char *argv[])
 	int bookstore=0;
 	long long mtime;
 
-	//verify if the user has "bookstore" permission
+	//Verifies if the user has "bookstore" permission.
 	if( !strcmp(argv[argc-1], "bookstore") )
 		bookstore=1;
 
@@ -96,14 +134,14 @@ int main(int argc, char *argv[])
 	    || ( argc - bookstore > 1 && 0 == strcmp(argv[1], "-h") )
 	    || ( argc - bookstore > 1 && 0 == strcmp(argv[1], "--help") ) ) 
 	{
-        fprintf(stderr,"usage: client operation\n");
+	fprintf(stderr,"usage: client operation\n");
 		fprintf(stderr,"\t0: List all ISBN with titles\n");
 		fprintf(stderr,"\t1: Given an ISBN, show its description\n");
 		fprintf(stderr,"\t2: Given an ISBN, show every information available\n");
-		fprintf(stderr,"\t3: LIst everything from every book\n");
+		fprintf(stderr,"\t3: List everything from every book\n");
 		fprintf(stderr,"\t4: Change the stock count of a book (by ISBN)\n");
 		fprintf(stderr,"\t5: Given an ISBN, show the available stock\n");
-        exit(1);
+	exit(1);
     }
 
 	memset(&hints, 0, sizeof hints);
@@ -111,7 +149,7 @@ int main(int argc, char *argv[])
 	hints.ai_socktype = SOCK_DGRAM;
 
 	//VERSION THAT GETS IP FROM THE WEB
-	//Gets the server ip from the web
+	//Gets the server ip from the web.
 	char ip[100];
     system("curl -s http://www.students.ic.unicamp.br/~ra091187/mc823/ip.txt > ip.txt");
 	// switches back the 1s and 2s (changed for security)
@@ -120,9 +158,6 @@ int main(int argc, char *argv[])
     fscanf(f, "%s", ip);
     fclose(f);
 
-//	int i;
-	//for(i=0; i<5; i++) {
-//		if ((rv = getaddrinfo(ip, PORT, &hints, &servinfo)) == 0) break;
 	if ((rv = getaddrinfo(ip, PORT, &hints, &servinfo)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
 		return 1;
@@ -136,7 +171,7 @@ int main(int argc, char *argv[])
 	}
 	//End of changes in debug version.*/
 
-	//Loop through all the results and connect to the first we can
+	//Loop through all the results and connect to the first we can.
 	for(server = servinfo; server != NULL; server = server->ai_next) {
 		if ((sockfd = socket(server->ai_family, server->ai_socktype,
 				server->ai_protocol)) == -1) {
@@ -146,6 +181,9 @@ int main(int argc, char *argv[])
 
 		break;
 	}
+
+	//Set socket to non-blocking.
+	fcntl(sockfd, F_SETFL, O_NONBLOCK);
 
 	if (server == NULL) {
 		fprintf(stderr, "Client: Failed to get server\n");
@@ -160,7 +198,7 @@ int main(int argc, char *argv[])
 	int quit=0;
 	while(!quit)
 	{
-		char op[3];
+		char op[OP_LENGTH];
 		
 		if( argc - bookstore != 2 )
 		{
@@ -169,7 +207,7 @@ int main(int argc, char *argv[])
 			printf("\t0: List all ISBN with titles\n");
 			printf("\t1: Given an ISBN, show its description\n");
 			printf("\t2: Given an ISBN, show every information available\n");
-			printf("\t3: LIst everything from every book\n");
+			printf("\t3: List everything from every book\n");
 			printf("\t4: Change the stock count of a book (by ISBN)\n");
 			printf("\t5: Given an ISBN, show the available stock\n");
 			printf("\t6: Exit\n");
@@ -232,8 +270,7 @@ int main(int argc, char *argv[])
 }
 
 
-long long get_isbns_and_titles(int sockfd, char *op)
-{
+long long get_isbns_and_titles(int sockfd, char *op) {
 	struct timeval start, end;
 	int len;
 
@@ -241,7 +278,7 @@ long long get_isbns_and_titles(int sockfd, char *op)
 	gettimeofday(&start, NULL);
 	
 	//Sends the operation code.
-	len = OP_LENGTH;
+	len = OP_AND_PARAMETERS_LENGTH;
 	if (sendto (sockfd, op, len, 0, server->ai_addr, server->ai_addrlen) == -1) {
 		perror ("sendto");
 	}
@@ -255,8 +292,7 @@ long long get_isbns_and_titles(int sockfd, char *op)
 	return timelapse(start, end);
 }
 
-long long get_desc_by_isbn (int sockfd, char *op)
-{
+long long get_desc_by_isbn (int sockfd, char *op) {
 	struct timeval start, end;
 	int len;
 	char ISBN[ISBN_LENGTH];
@@ -270,10 +306,12 @@ long long get_desc_by_isbn (int sockfd, char *op)
 
 	//Sends the operation code and the ISBN in the same message.
 	sprintf (msg, "%c|%s", op[0], ISBN);
-	len = OP_LENGTH + 1 + ISBN_LENGTH;
+	len = OP_AND_PARAMETERS_LENGTH;
+	printf("Waiting1...\n");
 	if (sendto (sockfd, msg, len, 0, server->ai_addr, server->ai_addrlen) == -1) {
 		perror ("sendto");
 	}
+	printf("Got out1...\n");	
 
 	//Receives server response.
 	recvfrom_print_all(sockfd);
@@ -284,8 +322,7 @@ long long get_desc_by_isbn (int sockfd, char *op)
 	return timelapse(start, end);
 }
 
-long long get_info_by_isbn (int sockfd, char *op)
-{
+long long get_info_by_isbn (int sockfd, char *op) {
 	struct timeval start, end;
 	int len;
 	char ISBN[ISBN_LENGTH];
@@ -299,7 +336,7 @@ long long get_info_by_isbn (int sockfd, char *op)
 
 	//Sends the operation code and the ISBN in the same message.
 	sprintf (msg, "%c|%s", op[0], ISBN);
-	len = OP_LENGTH + 1 + ISBN_LENGTH;
+	len = OP_AND_PARAMETERS_LENGTH;
 	if (sendto (sockfd, msg, len, 0, server->ai_addr, server->ai_addrlen) == -1) {
 		perror ("sendto");
 	}
@@ -313,8 +350,7 @@ long long get_info_by_isbn (int sockfd, char *op)
 	return timelapse(start, end);
 }
 
-long long get_all_infos (int sockfd, char *op)
-{
+long long get_all_infos (int sockfd, char *op) {
 	struct timeval start, end;
 	int len;
 
@@ -322,7 +358,7 @@ long long get_all_infos (int sockfd, char *op)
 	gettimeofday(&start, NULL);
 
 	//Sends the operation code.
-	len = OP_LENGTH;
+	len = OP_AND_PARAMETERS_LENGTH;
 	if (sendto (sockfd, op, len, 0, server->ai_addr, server->ai_addrlen) == -1) {
 		perror ("sendto");
 	}
@@ -336,8 +372,7 @@ long long get_all_infos (int sockfd, char *op)
 	return timelapse(start, end);
 }
 
-long long change_stock_by_isbn (int sockfd, char *op)
-{
+long long change_stock_by_isbn (int sockfd, char *op) {
 	struct timeval start, end;
 	int len;
 	char ISBN[ISBN_LENGTH];
@@ -355,7 +390,7 @@ long long change_stock_by_isbn (int sockfd, char *op)
 
 	//Sends the operation code, the ISBN and the new stock in the same message.
 	sprintf (msg, "%c|%s|%s", op[0], ISBN, stock);
-	len = OP_LENGTH + 2 + ISBN_LENGTH + INT_LENGTH;
+	len = OP_AND_PARAMETERS_LENGTH;
 	if (sendto (sockfd, msg, len, 0, server->ai_addr, server->ai_addrlen) == -1) {
 		perror ("sendto");
 	}
@@ -369,8 +404,7 @@ long long change_stock_by_isbn (int sockfd, char *op)
 	return timelapse(start, end);
 }
 
-long long get_stock_by_isbn (int sockfd, char *op)
-{
+long long get_stock_by_isbn (int sockfd, char *op) {
 	struct timeval start, end;
 	int len;
 	char ISBN[ISBN_LENGTH];
@@ -384,7 +418,7 @@ long long get_stock_by_isbn (int sockfd, char *op)
 
 	//Sends the operation code and the ISBN in the same message.
 	sprintf (msg, "%c|%s", op[0], ISBN);
-	len = OP_LENGTH + 1 + ISBN_LENGTH;
+	len = OP_AND_PARAMETERS_LENGTH;
 	if (sendto (sockfd, msg, len, 0, server->ai_addr, server->ai_addrlen) == -1) {
 		perror ("sendto");
 	}

@@ -9,8 +9,12 @@
 #define MAX_TEXT 500
 #define ISBN_LENGTH 14 //Standard is 13, but we must consider the '\0' character.
 #define OP_LENGTH 3
-#define MAX_MSG 1000
+#define MAX_MSG 2000
 #define INT_LENGTH 10
+//Length of the messages sent by the client: maximum between the required values of
+//all operations. This maximum occurs in change_isbn_by_stock (client.c),
+//where strings are concatenate as in op[0]|ISBN|stock.
+#define OP_AND_PARAMETERS_LENGTH OP_LENGTH + 2 + ISBN_LENGTH + INT_LENGTH 
 
 //Database operations.
 #define ALL_ISBNS_AND_TITLES 0
