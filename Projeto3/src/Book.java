@@ -34,4 +34,27 @@ public class Book {
 	{
 		System.out.println(title);
 	}
+	
+	public String printAll()
+	{
+		String s = "";
+		s += "Title: ";
+		s += title + "\n";
+		s += "Authors:\n";
+		s += authors.get(0) + "\n";
+		s += authors.get(1) + "\n";
+		s += authors.get(2) + "\n";
+		s += "Description: ";
+		s += description + "\n";
+		s += "Publisher: ";
+		s += publisher + "\n";
+		s += "Publishing year: ";
+		s += publishing_year + "\n";
+		s += "ISBN: ";
+		s += isbn + "\n";
+		s += "Stock: ";
+		s += stock;
+		s += "\n";
+		return s;
+	}
 }

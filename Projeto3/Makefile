@@ -13,7 +13,7 @@ server: rmiregistry
 	@sleep 2
 
 client:
-	(cd bin && java  -classpath . unicamp.mc823.Client)
+	(cd bin && java  -classpath . unicamp.mc823.Client ${OP})
 
 database:
 	java  -classpath ./bin unicamp.mc823.Database

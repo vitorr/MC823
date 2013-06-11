@@ -6,37 +6,45 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 	
 public class Server implements Hello {
-	
+    
+    static Database database;
+    
     public Server() {}
 
     public String getIsbnsAndTitles()
     {
-	return "";
+	String response = database.getIsbnsAndTitles();
+	return response;
     }
 
     public String getDescByIsbn(String isbn)
     {
-	return "it works! received: " + isbn;
+	String response = database.getDescByIsbn(isbn);
+	return response;
     }
 
     public String getInfoByIsbn(String isbn)
     {
-	return "";
+	String response = database.getInfoByIsbn(isbn);
+	return response;
     }
 
     public String getAllInfos()
     {
-	return "";
+	String response = database.getAllInfos();
+	return response;
     }
 
     public String changeStockByIsbn(String isbn, int stock)
     {
-	return "";
+	String response = database.changeStockByIsbn(isbn, stock);
+	return response;
     }
 
     public String getStockByIsbn(String isbn)
     {
-	return "";
+	String response = database.getStockByIsbn(isbn);
+	return response;
     }
     
     private void saveTime(int op, long start, long end)
@@ -45,14 +53,15 @@ public class Server implements Hello {
 
 
     public static void main(String args[]) {
+	database = new Database();
 	
 	try {
 	    Server obj = new Server();
-	    Hello stub = (Hello) UnicastRemoteObject.exportObject(obj, 0);
+	    Hello stub = (Hello) UnicastRemoteObject.exportObject(obj, 9001);
 
 	    // Bind the remote object's stub in the registry
 	    Registry registry = LocateRegistry.getRegistry();
-	    registry.bind("Hello", stub);
+	    registry.rebind("Hello", stub);
 
 	    System.err.println("Server ready");
 	} catch (Exception e) {
