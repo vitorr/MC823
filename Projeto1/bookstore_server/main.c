@@ -373,14 +373,18 @@ long get_all_infos (int socket) {
 	//Gets the structs from the file and sends the information.
 	db_file = fopen ("./bookstore_database.bin", "rb");
 	while ((fread (&b, sizeof (book), 1, db_file)) == 1) {
-		//Sends reply to be printed on the client.
-		snprintf (msg, MAX_MSG, "Title: %s\nAuthors: %s\n%s\n%s\nDescription: %s\nPublisher: %s\nPublishing year: %d\nISBN: %s\nStock: %d\n\n", b.title, b.authors[0].name, b.authors[1].name, b.authors[2].name, b.description, b.publisher, b.publishing_year, b.isbn, b.stock);
-		len = strlen (msg);
-		
-		if (sendall (socket, msg, &len) == -1) {
-			perror ("sendall");
-			printf ("Only %d bytes sent.\n", len);
-		}	
+		if(b.isbn[12]-'0'<8 && b.isbn[11]-'0'==0)
+		{
+			//Sends reply to be printed on the client.
+			snprintf (msg, MAX_MSG, "Title: %s\nAuthors: %s\n%s\n%s\nDescription: %s\nPublisher: %s\nPublishing year: %d\nISBN: %s\nStock: %d\n\n", b.title, b.authors[0].name, b.authors[1].name, b.authors[2].name, b.description, b.publisher, b.publishing_year, b.isbn, b.stock);
+			len = strlen (msg);
+			
+			if (sendall (socket, msg, &len) == -1) {
+				perror ("sendall");
+				printf ("Only %d bytes sent.\n", len);
+			}	
+			//printf("%s", msg);
+		}
 	}
 
 	//Sends last information ("|" string) to indicate the end of the database.

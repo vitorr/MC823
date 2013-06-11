@@ -6,3 +6,6 @@ run:
 
 clean:
 	-rm *.out
+
+down:
+	-(cd ../logs && make down)

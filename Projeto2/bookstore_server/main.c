@@ -114,9 +114,6 @@ int main(int argc, char *argv[])
 	}
 
 	freeaddrinfo(servinfo);
-	
-	//Set socket to non-blocking.
-	fcntl(sockfd, F_SETFL, O_NONBLOCK);
 
     //Main "accept()" loop.
     while(1) {  
@@ -125,8 +122,6 @@ int main(int argc, char *argv[])
 		addr_len = sizeof their_addr;
 		if ((numbytes = recvfrom(sockfd, buf, MAX_MSG-1 , 0,
 			(struct sockaddr *)&their_addr, &addr_len)) == -1) {
-			//perror("recvfrom");
-			//exit(1);
 			continue;
 		}
 
@@ -177,7 +172,6 @@ int main(int argc, char *argv[])
 			char fname[40];
 			sprintf(fname, "../logs/server_op%d.log", op);
 			FILE *f = fopen(fname, "a");
-			//fprintf(f, "Elapsed time: %ld milliseconds\n", mtime);
 			fprintf(f, "%ld\n", mtime);
 			fclose(f);
 		}
@@ -234,14 +228,12 @@ long get_desc_by_isbn (int sockfd, char* buf, struct sockaddr *client_addr) {
 	struct timeval start, end;
 	int numbytes;
 
-
 	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
 	
 	//Gets the ISBN number from client.
 	sscanf(buf, "%[^|]|%[^|]", tmp, isbn);
 	printf("isbn: %s\n", isbn);
-	
 	
 	//Initializes memory.
 	req_book = (book *) malloc (sizeof (book));
@@ -304,7 +296,6 @@ long get_info_by_isbn (int sockfd, char* buf, struct sockaddr *client_addr) {
 	//ISBN not found: replies accordingly.
 	} else {
 		strcpy (tmp, "ISBN not in database\n");
-		
 		strncat(msg, tmp, MAX_MSG-2);
 	}
 	
@@ -378,7 +369,6 @@ long change_stock_by_isbn (int sockfd, char* buf, struct sockaddr *client_addr) 
 	struct timeval start, end;
 	int numbytes;
 	
-	
 	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
 	
@@ -387,7 +377,6 @@ long change_stock_by_isbn (int sockfd, char* buf, struct sockaddr *client_addr) 
 	printf("isbn: %s\n", isbn);
 	printf("stock: %d\n", new_stock);
 	
-
 	//Initializes memory.
 	req_book = (book *) malloc (sizeof (book));
 
@@ -450,14 +439,12 @@ long get_stock_by_isbn (int sockfd, char* buf, struct sockaddr *client_addr) {
 	struct timeval start, end;
 	int numbytes;
 	
-	
 	//### Marks the start of execution ###//
 	gettimeofday(&start, NULL);
 	
 	//Receives ISBN number from client.
 	sscanf(buf, "%[^|]|%[^|]", tmp, isbn);
 	printf("isbn: %s\n", isbn);
-
 
 	//Initializes memory.
 	req_book = (book *) malloc (sizeof (book));

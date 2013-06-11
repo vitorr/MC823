@@ -9,7 +9,7 @@
 #define MAX_TEXT 500
 #define ISBN_LENGTH 14 //Standard is 13, but we must consider the '\0' character.
 #define OP_LENGTH 3
-#define MAX_MSG 2000
+#define MAX_MSG 1450
 #define INT_LENGTH 10
 //Length of the messages sent by the client: maximum between the required values of
 //all operations. This maximum occurs in change_isbn_by_stock (client.c),
@@ -27,7 +27,6 @@
 typedef struct _author {
     char name[MAX_NAME];
 } Author;
-
 typedef struct _book {
     char title [MAX_NAME];
     Author authors [MAX_AUTHORS_PER_BOOK];
@@ -54,24 +53,6 @@ int sendall(int s, char *buf, int *len) {
 	return n==-1?-1:0; // return -1 on failure, 0 on success
 }
 
-/*
-//Receives data from the network and prints it, until it finds the termination char.
-//Manages the case when the "recv()" function does not receive all of the data it was sent.
-int recvall(int s, char *buf, int *len, char end) {
-	int total = 0; // how many bytes we've received
-	//int bytesleft = *len; // how many we have left to send
-	int n;
-	while(total < *len) {
-		n = recv(s, buf+total, bytesleft, 0);
-		if (n == -1) { break; }
-		total += n;
-		bytesleft -= n;
-	}
-	*len = total; // return number actually sent here
-	return n==-1?-1:0; // return -1 on failure, 0 on success
-}
-*/
-
 long long timelapse(struct timeval start, struct timeval end) {
 	if (1)
 	{
@@ -88,5 +69,4 @@ long long timelapse(struct timeval start, struct timeval end) {
 		return mtime;
 	}
 }
-
 #endif

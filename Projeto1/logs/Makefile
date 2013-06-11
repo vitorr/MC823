@@ -2,9 +2,7 @@ all:
 	python graphs.py
 
 up:
-	for i in `seq 0 5` ; do \
-		scp server_op$$i.log ra091187@ssh.students.ic.unicamp.br:~/public_html/mc823/server_op$$i.log ; \
-	done
+	scp server_op* ra091187@ssh.students.ic.unicamp.br:~/public_html/mc823/
 
 down:
 	for i in `seq 0 5` ; do \

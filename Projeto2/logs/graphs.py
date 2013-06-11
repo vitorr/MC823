@@ -24,9 +24,6 @@ for i in range(6):
     # Ignore negative values
     total = [s for s in total if s > 0]
     
-    # Ignore weird values (overflow, etc)
-    #total = [s for s in total if s < 100000]
-    
     # Numpy array
     total_ = np.array(total)
     totalMeans.append( np.nan_to_num( total_.mean() ) )
@@ -40,9 +37,6 @@ for i in range(6):
     
     # Ignore negative values
     proc = [s for s in proc if s > 0]
-    
-    # Ignore weird values (overflow, etc)
-    #proc = [s for s in proc if s < 100000]
     
     # Numpy array
     proc_ = np.array(proc)

@@ -66,36 +66,8 @@ void recvfrom_print_all(int sockfd)
 	int count = 0;
 	struct timeval start, end;
 
-/*	//Prepare for "select()".
-	timeout.tv_sec = 2; //Timeout in seconds.
-	FD_ZERO (&read_socket_set);
-	FD_SET (sockfd, &read_socket_set);
+	numbytes = recvfrom(sockfd, buf, MAX_MSG-1, 0, &from_addr, &from_len);
 
-	//Selects the socket which is ready (in this case, we only have one).
-	//If the timeout is exceeded, the message was probably lost by UDP,
-	//so we ignore trying to receive this message.
-	printf ("Waiting...");
-	ret = select (sockfd + 1, &read_socket_set, NULL, NULL, &timeout);
-	printf ("Got out!");
-	//if (!FD_ISSET (sockfd, &read_socket_set)) {
-	if (ret < 1) {
-		printf ("The message was lost (not received from the server).\n");
-		return;
-	}*/
-
-	//Receives reply from the server.
-	gettimeofday(&start, NULL);
-	while (	(numbytes = recvfrom(sockfd, buf, MAX_MSG-1, 0, &from_addr, &from_len)) == -1) {
-		gettimeofday(&end, NULL);
-		if (timelapse (start, end) >= 2000000) break;
-	}
-//	numbytes = recvfrom(sockfd, buf, MAX_MSG-1, 0, &from_addr, &from_len);
-	/* Testing identity of the server: not necessary for the application.
-	//Checks if the sender is indeed the server.
-	if (from_len != server->ai_addrlen || memcmp(server->ai_addr, &from_addr, from_len) != 0) {
-		printf("Client received a message from a peer other than the server. This message was ignored.\n");
-	//Printing.
-	} else {*/
 	//Prints the received buffer up until the termination character ("|").
 	if(numbytes!=-1){
 		buf[numbytes] = '\0';
@@ -162,14 +134,6 @@ int main (int argc, char *argv[]) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
 		return 1;
 	}
-	
-	/*//Debug version: server and client in the same machine.
-	hints.ai_flags = AI_PASSIVE;
-	if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {	
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
-		return 1;
-	}
-	//End of changes in debug version.*/
 
 	//Loop through all the results and connect to the first we can.
 	for(server = servinfo; server != NULL; server = server->ai_next) {
@@ -254,7 +218,6 @@ int main (int argc, char *argv[]) {
 			char fname[40];
 			sprintf(fname, "../logs/client_op%s.log", op);
 			FILE *f = fopen(fname, "a");
-			//fprintf(f, "Elapsed time: %ld milliseconds\n", mtime);
 			fprintf(f, "%lld\n", mtime);
 			fclose(f);
 		}
