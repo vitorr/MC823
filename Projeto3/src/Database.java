@@ -9,38 +9,31 @@ import java.util.*;
 public class Database {
 
     ArrayList<Book> list;
-    
+
     public Database() {
-	InputStream    fis;
-	BufferedReader br;
-	String         line;
-	
 	list = new ArrayList<Book>();
-	
-	try{
-	    //fis = new FileInputStream("src/database.txt");
-	    fis = new FileInputStream("../src/database.txt");
-	    br = new BufferedReader(new InputStreamReader(fis));
-	    
+
+	try {
+	    InputStream fis = new FileInputStream("database.txt");
+	    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+	    String line;
+
 	    while ((line = br.readLine()) != null) {
 		String tmp[] = line.split("\\|");
 		Book book = new Book(tmp);
-		
+
 		list.add(book);
 	    }
-	    
+
 	    // Done with the file
 	    br.close();
-	    br = null;
-	    fis = null;
 	}
 	catch(Exception e) {
 	    System.err.println("Caught Exception: " + e);
 	    e.printStackTrace();
 	}
-	System.err.println("FREEEDOMMM");
     }
-    
+
     public String getIsbnsAndTitles()
     {
 	String s = "";
@@ -91,7 +84,9 @@ public class Database {
 		s = "";
 		s += "Operation complete!";
 		s += "New stock: " + Integer.toString(stock) + "\n";
-		//toFile();
+
+		// Updates database
+		toFile();
 		break;
 	    }
 	return s;
@@ -108,12 +103,7 @@ public class Database {
 	    }
 	return s;
     }
-    
-    public void print() {
-	for(Book a: list)
-	    a.print();
-    }
-    
+
     public void toFile() {
 	String s = "";
 	for(Book a: list) {
@@ -128,13 +118,19 @@ public class Database {
 	    s += a.stock;
 	    s += "\n";
 	}
-	
-	// todo: write this to a file
-	System.out.println(s);
-    }
 
-    public static void main(String[] args) {
-	Database bla = new Database();
-	System.err.println(bla.getIsbnsAndTitles());
+	// Write to file
+	PrintStream out = null;
+	try {
+	    out = new PrintStream(new FileOutputStream("database.txt"));
+	    out.print(s);
+	}
+	catch(Exception e) {
+	    System.err.println("Caught Exception: " + e);
+	    e.printStackTrace();
+	}
+	finally {
+	    if (out != null) out.close();
+	}
     }
 }

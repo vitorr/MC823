@@ -4,20 +4,20 @@ import java.util.*;
 
 public class Book {
 
-    String all[];
-    
-    String title;
-    ArrayList<String> authors;
-    String description;
-    String publisher;
-    int publishing_year;
-    String isbn;    
-    int stock;
-    
-    public Book(String arr[])
-    {
+	String all[];
+
+	String title;
+	ArrayList<String> authors;
+	String description;
+	String publisher;
+	int publishing_year;
+	String isbn;    
+	int stock;
+
+	public Book(String arr[])
+	{
 		authors = new ArrayList<String>();
-		
+
 		all = arr;
 		title = arr[0];
 		authors.add(arr[1]);
@@ -30,11 +30,6 @@ public class Book {
 		stock = Integer.parseInt(arr[8]);
 	}
 
-	public void print()
-	{
-		System.out.println(title);
-	}
-	
 	public String printAll()
 	{
 		String s = "";
